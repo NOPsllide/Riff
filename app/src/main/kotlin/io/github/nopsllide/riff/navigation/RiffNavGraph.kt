@@ -32,6 +32,8 @@ import io.github.nopsllide.riff.core.player.SleepTimerMode
 import io.github.nopsllide.riff.feature.discover.DiscoverScreen
 import io.github.nopsllide.riff.feature.equalizer.EqualizerScreen
 import io.github.nopsllide.riff.feature.library.CreatePlaylistDialog
+import io.github.nopsllide.riff.feature.library.FavoritesScreen
+import io.github.nopsllide.riff.feature.library.HistoryScreen
 import io.github.nopsllide.riff.feature.library.LibraryScreen
 import io.github.nopsllide.riff.feature.library.PlaylistDetailScreen
 import io.github.nopsllide.riff.feature.lyrics.LyricsScreen
@@ -155,13 +157,26 @@ fun RiffNavGraph(
                 RiffBottomNav(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        currentRoute = route
-                        navController.navigate(route) {
-                            popUpTo(Screen.Discover.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+                        when (route) {
+                            Screen.Queue.route -> {
+                                isQueueVisible = true
+                            }
+                            Screen.Settings.route -> {
+                                isSettingsVisible = true
+                            }
+                            else -> {
+                                currentRoute = route
+                                navController.navigate(route) {
+                                    popUpTo(Screen.Discover.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
                         }
-                    }
+                    },
+                    favoritesCount = favoriteTracks.size,
+                    localCount = 0,
+                    queueCount = queue.size
                 )
             }
         ) { paddingValues ->
@@ -205,21 +220,15 @@ fun RiffNavGraph(
                             }
                         )
                     }
-                    composable(Screen.Search.route) {
-                        SearchScreen(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            onSearch = {},
-                            selectedPlatform = selectedPlatform,
-                            onPlatformSelect = { selectedPlatform = it },
-                            results = searchResults,
-                            isLoading = isSearchLoading,
+                    composable(Screen.Favorites.route) {
+                        FavoritesScreen(
+                            favoriteTracks = favoriteTracks,
                             currentTrack = currentTrack,
                             onTrackClick = { t, q -> onTrackPlay(t, q) },
                             onFavoriteToggle = { onFavoriteToggle(it) }
                         )
                     }
-                    composable(Screen.Library.route) {
+                    composable(Screen.Local.route) {
                         LibraryScreen(
                             favoriteTracks = favoriteTracks,
                             historyTracks = historyTracks,
@@ -232,6 +241,17 @@ fun RiffNavGraph(
                             },
                             onCreatePlaylistClick = { isCreatePlaylistVisible = true },
                             onPlaylistClick = { selectedPlaylistDetail = it }
+                        )
+                    }
+                    composable(Screen.History.route) {
+                        HistoryScreen(
+                            historyTracks = historyTracks,
+                            currentTrack = currentTrack,
+                            onTrackClick = { t, q -> onTrackPlay(t, q) },
+                            onFavoriteToggle = { onFavoriteToggle(it) },
+                            onClearHistory = {
+                                scope.launch { app.database.trackDao().clearHistory() }
+                            }
                         )
                     }
                 }
