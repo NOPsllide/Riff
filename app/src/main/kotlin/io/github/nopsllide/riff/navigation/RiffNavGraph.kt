@@ -154,30 +154,32 @@ fun RiffNavGraph(
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
             bottomBar = {
-                RiffBottomNav(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        when (route) {
-                            Screen.Queue.route -> {
-                                isQueueVisible = true
-                            }
-                            Screen.Settings.route -> {
-                                isSettingsVisible = true
-                            }
-                            else -> {
-                                currentRoute = route
-                                navController.navigate(route) {
-                                    popUpTo(Screen.Discover.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                if (currentRoute != Screen.Discover.route) {
+                    RiffBottomNav(
+                        currentRoute = currentRoute,
+                        onNavigate = { route ->
+                            when (route) {
+                                Screen.Queue.route -> {
+                                    isQueueVisible = true
+                                }
+                                Screen.Settings.route -> {
+                                    isSettingsVisible = true
+                                }
+                                else -> {
+                                    currentRoute = route
+                                    navController.navigate(route) {
+                                        popUpTo(Screen.Discover.route) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             }
-                        }
-                    },
-                    favoritesCount = favoriteTracks.size,
-                    localCount = 0,
-                    queueCount = queue.size
-                )
+                        },
+                        favoritesCount = favoriteTracks.size,
+                        localCount = 0,
+                        queueCount = queue.size
+                    )
+                }
             }
         ) { paddingValues ->
             Box(
@@ -256,7 +258,7 @@ fun RiffNavGraph(
                     }
                 }
 
-                if (currentTrack != null && !isFullPlayerVisible && !isTvKaraokeVisible) {
+                if (currentRoute != Screen.Discover.route && currentTrack != null && !isFullPlayerVisible && !isTvKaraokeVisible) {
                     MiniPlayer(
                         currentTrack = currentTrack,
                         isPlaying = isPlaying,
