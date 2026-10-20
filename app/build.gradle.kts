@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.rootscripts.riff"
+    namespace = "io.github.nopsllide.riff"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.github.rootscripts.riff"
+        applicationId = "io.github.nopsllide.riff"
         minSdk = 26
         targetSdk = 34
         versionCode = 420300

@@ -4,4 +4,4 @@
 }
 -dontwarn okhttp3.**
 -dontwarn okio.**
--keep class io.github.rootscripts.riff.core.model.** { *; }
+-keep class io.github.nopsllide.riff.core.model.** { *; }
