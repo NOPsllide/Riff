@@ -422,7 +422,6 @@ fun DiscoverScreen(
                                     state = pagerState,
                                     pageSize = PageSize.Fixed(250.dp),
                                     contentPadding = PaddingValues(horizontal = 60.dp),
-                                    beyondViewportPageCount = 2,
                                     pageSpacing = 16.dp,
                                     modifier = Modifier
                                         .fillMaxWidth()
