@@ -178,11 +178,31 @@ fun RiffNavGraph(
                     composable(Screen.Discover.route) {
                         DiscoverScreen(
                             hotTracks = hotTracks,
+                            historyTracks = historyTracks,
                             isLoading = isHotLoading,
                             currentTrack = currentTrack,
+                            searchQuery = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            selectedPlatform = selectedPlatform,
+                            onPlatformSelect = { selectedPlatform = it },
+                            searchResults = searchResults,
+                            isSearchLoading = isSearchLoading,
                             onTrackClick = { t, q -> onTrackPlay(t, q) },
                             onFavoriteToggle = { onFavoriteToggle(it) },
-                            onOpenSettings = { isSettingsVisible = true }
+                            onRefreshWave = {
+                                scope.launch {
+                                    isHotLoading = true
+                                    val picks = app.chartsClient.getHotPicks(20)
+                                    hotTracks = if (picks.isNotEmpty()) picks.shuffled() else app.innertubeClient.search("Top Hits 2025", 15)
+                                    isHotLoading = false
+                                }
+                            },
+                            onPlayWave = { list, startIdx ->
+                                if (list.isNotEmpty()) {
+                                    val idx = startIdx.coerceIn(0, list.size - 1)
+                                    onTrackPlay(list[idx], list)
+                                }
+                            }
                         )
                     }
                     composable(Screen.Search.route) {
