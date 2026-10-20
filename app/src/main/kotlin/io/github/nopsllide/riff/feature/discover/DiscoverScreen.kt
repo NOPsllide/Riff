@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,8 +60,8 @@ data class ArtistDisplay(
 
 private val defaultGlobalTracks = listOf(
     Track(id = "1", title = "HER GÜN AĞLADIM", artist = "Bege", album = "Single", duration = 210, thumbnail = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "2", title = "Süzüler", artist = "Gazapizm", album = "Single", duration = 240, thumbnail = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "3", title = "NKBİ", artist = "Güneş", album = "Atlantis", duration = 185, thumbnail = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
+    Track(id = "2", title = "NKBİ", artist = "Güneş", album = "Atlantis", duration = 185, thumbnail = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
+    Track(id = "3", title = "Süzüler", artist = "Gazapizm", album = "Single", duration = 240, thumbnail = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
     Track(id = "4", title = "Starboy", artist = "The Weeknd", album = "Starboy", duration = 230, thumbnail = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
     Track(id = "5", title = "FE!N", artist = "Travis Scott", album = "UTOPIA", duration = 191, thumbnail = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
     Track(id = "6", title = "Levitating", artist = "Dua Lipa", album = "Future Nostalgia", duration = 203, thumbnail = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube")
@@ -116,13 +117,14 @@ fun DiscoverScreen(
 
         Box(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size((163 * scale).dp, (157 * scale).dp)
-                .blur(120.dp)
+                .align(Alignment.CenterStart)
+                .offset(x = (-30 * scale).dp, y = (-60 * scale).dp)
+                .size((220 * scale).dp, (200 * scale).dp)
+                .blur(160.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.12f),
+                            Color.White.copy(alpha = 0.05f),
                             Color.Transparent
                         )
                     ),
@@ -143,6 +145,11 @@ fun DiscoverScreen(
                         .padding(horizontal = (24 * scale).dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    AudioLinesLogoIcon(
+                        size = (24 * scale).dp,
+                        tint = Color.White
+                    )
+                    Spacer(modifier = Modifier.width((8 * scale).dp))
                     BasicText(
                         text = "Riff",
                         style = TextStyle(
@@ -151,11 +158,6 @@ fun DiscoverScreen(
                             fontWeight = FontWeight.Normal,
                             fontFamily = FontFamily.SansSerif
                         )
-                    )
-                    Spacer(modifier = Modifier.width((8 * scale).dp))
-                    AudioLinesLogoIcon(
-                        size = (24 * scale).dp,
-                        tint = Color.White
                     )
                 }
 
@@ -212,9 +214,7 @@ fun DiscoverScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size((52 * scale).dp, (42 * scale).dp)
-                                    .clip(RoundedCornerShape(100.dp))
-                                    .background(Color.White.copy(alpha = 0.08f)),
+                                    .size((42 * scale).dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaYouTubeLogoIcon(
@@ -223,7 +223,10 @@ fun DiscoverScreen(
                                 )
                             }
                             Box(
-                                modifier = Modifier.size((42 * scale).dp),
+                                modifier = Modifier
+                                    .size((52 * scale).dp, (42 * scale).dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White.copy(alpha = 0.08f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaYouTubeMusicLogoIcon(
@@ -296,57 +299,11 @@ fun DiscoverScreen(
                 Spacer(modifier = Modifier.height((28 * scale).dp))
 
                 Column(modifier = Modifier.padding(horizontal = (24 * scale).dp)) {
-                    BasicText(
-                        text = "My Wave",
-                        style = TextStyle(
-                            color = Color.White,
-                            fontSize = (32 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif
-                        )
-                    )
-                    Spacer(modifier = Modifier.height((8 * scale).dp))
-                    BasicText(
-                        text = "Save at least 5 tracks to tune My Wave to your taste.",
-                        style = TextStyle(
-                            color = Color(0xFF8E8E93),
-                            fontSize = (23 * scale).sp,
-                            lineHeight = (28 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif
-                        )
-                    )
-                    Spacer(modifier = Modifier.height((16 * scale).dp))
-                    Box(
-                        modifier = Modifier
-                            .size((185 * scale).dp, (54 * scale).dp)
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FigmaPlayActionIcon(
-                                size = (20 * scale).dp,
-                                tint = Color.Black
-                            )
-                            Spacer(modifier = Modifier.width((8 * scale).dp))
-                            BasicText(
-                                text = "Play wave",
-                                style = TextStyle(
-                                    color = Color.Black,
-                                    fontSize = (21 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
-                                    fontFamily = FontFamily.SansSerif
-                                )
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height((32 * scale).dp))
-
-                Column(modifier = Modifier.padding(horizontal = (24 * scale).dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
                         BasicText(
                             text = "Jump back in",
                             style = TextStyle(
@@ -356,7 +313,6 @@ fun DiscoverScreen(
                                 fontFamily = FontFamily.SansSerif
                             )
                         )
-                        Spacer(modifier = Modifier.width((14 * scale).dp))
                         BasicText(
                             text = "Recently played",
                             style = TextStyle(
@@ -379,7 +335,67 @@ fun DiscoverScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height((30 * scale).dp))
+                Spacer(modifier = Modifier.height((32 * scale).dp))
+
+                Column(modifier = Modifier.padding(horizontal = (24 * scale).dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicText(
+                            text = "My Wave",
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = (32 * scale).sp,
+                                fontWeight = FontWeight.Normal,
+                                fontFamily = FontFamily.SansSerif
+                            )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size((185 * scale).dp, (54 * scale).dp)
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                FigmaPlayActionIcon(
+                                    size = (20 * scale).dp,
+                                    tint = Color.Black
+                                )
+                                Spacer(modifier = Modifier.width((8 * scale).dp))
+                                BasicText(
+                                    text = "Play wave",
+                                    style = TextStyle(
+                                        color = Color.Black,
+                                        fontSize = (21 * scale).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.SansSerif
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height((18 * scale).dp))
+
+                    BasicText(
+                        text = "Save at least 5 tracks to tune\nMy Wave to your taste.",
+                        modifier = Modifier.fillMaxWidth(),
+                        style = TextStyle(
+                            color = Color(0xFF8E8E93),
+                            fontSize = (21 * scale).sp,
+                            lineHeight = (28 * scale).sp,
+                            fontWeight = FontWeight.Normal,
+                            fontFamily = FontFamily.SansSerif,
+                            textAlign = TextAlign.Center
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height((32 * scale).dp))
 
                 BasicText(
                     text = "Because you listen to $primaryArtist",
@@ -592,10 +608,18 @@ fun DiscoverScreen(
 
                         Spacer(modifier = Modifier.width((10 * scale).dp))
 
-                        FigmaPlayActionIcon(
-                            size = (24 * scale).dp,
-                            tint = Color.White
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size((40 * scale).dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            FigmaPlayActionIcon(
+                                size = (18 * scale).dp,
+                                tint = Color.Black
+                            )
+                        }
 
                         Spacer(modifier = Modifier.width((16 * scale).dp))
 
