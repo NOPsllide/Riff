@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -118,8 +119,8 @@ fun DiscoverScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .offset(x = (-30 * scale).dp, y = (-60 * scale).dp)
-                .size((220 * scale).dp, (200 * scale).dp)
+                .offset(x = (-40 * scale).dp, y = (-20 * scale).dp)
+                .size((240 * scale).dp, (220 * scale).dp)
                 .blur(160.dp)
                 .background(
                     Brush.radialGradient(
@@ -137,12 +138,12 @@ fun DiscoverScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.statusBarsPadding())
-                Spacer(modifier = Modifier.height((12 * scale).dp))
+                Spacer(modifier = Modifier.height((62 * scale).dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = (24 * scale).dp),
+                        .padding(horizontal = (26 * scale).dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AudioLinesLogoIcon(
@@ -161,12 +162,12 @@ fun DiscoverScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height((16 * scale).dp))
+                Spacer(modifier = Modifier.height((38 * scale).dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = (24 * scale).dp),
+                        .padding(horizontal = (26 * scale).dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -213,8 +214,7 @@ fun DiscoverScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .size((42 * scale).dp),
+                                modifier = Modifier.size((42 * scale).dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaYouTubeLogoIcon(
@@ -247,10 +247,10 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((20 * scale).dp))
+                Spacer(modifier = Modifier.height((62 * scale).dp))
 
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = (24 * scale).dp),
+                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
                     horizontalArrangement = Arrangement.spacedBy((10 * scale).dp)
                 ) {
                     item {
@@ -296,9 +296,9 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((28 * scale).dp))
+                Spacer(modifier = Modifier.height((53 * scale).dp))
 
-                Column(modifier = Modifier.padding(horizontal = (24 * scale).dp)) {
+                Column(modifier = Modifier.padding(horizontal = (26 * scale).dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -323,7 +323,7 @@ fun DiscoverScreen(
                             )
                         )
                     }
-                    Spacer(modifier = Modifier.height((8 * scale).dp))
+                    Spacer(modifier = Modifier.height((31 * scale).dp))
                     BasicText(
                         text = "Play some tracks to see them here",
                         style = TextStyle(
@@ -335,9 +335,9 @@ fun DiscoverScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height((32 * scale).dp))
+                Spacer(modifier = Modifier.height((82 * scale).dp))
 
-                Column(modifier = Modifier.padding(horizontal = (24 * scale).dp)) {
+                Column(modifier = Modifier.padding(horizontal = (28 * scale).dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -379,10 +379,10 @@ fun DiscoverScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height((18 * scale).dp))
+                    Spacer(modifier = Modifier.height((175 * scale).dp))
 
                     BasicText(
-                        text = "Save at least 5 tracks to tune\nMy Wave to your taste.",
+                        text = "Save at least 5 tracks to tune\nMy Wave to your traste.",
                         modifier = Modifier.fillMaxWidth(),
                         style = TextStyle(
                             color = Color(0xFF8E8E93),
@@ -395,11 +395,11 @@ fun DiscoverScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height((32 * scale).dp))
+                Spacer(modifier = Modifier.height((205 * scale).dp))
 
                 BasicText(
                     text = "Because you listen to $primaryArtist",
-                    modifier = Modifier.padding(horizontal = (24 * scale).dp),
+                    modifier = Modifier.padding(horizontal = (34 * scale).dp),
                     style = TextStyle(
                         color = Color.White,
                         fontSize = (26 * scale).sp,
@@ -408,10 +408,10 @@ fun DiscoverScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height((16 * scale).dp))
+                Spacer(modifier = Modifier.height((27 * scale).dp))
 
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = (24 * scale).dp),
+                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
                     horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
                 ) {
                     items(artists) { artist ->
@@ -449,11 +449,11 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((32 * scale).dp))
+                Spacer(modifier = Modifier.height((48 * scale).dp))
 
                 BasicText(
                     text = "New for you",
-                    modifier = Modifier.padding(horizontal = (24 * scale).dp),
+                    modifier = Modifier.padding(horizontal = (26 * scale).dp),
                     style = TextStyle(
                         color = Color.White,
                         fontSize = (26 * scale).sp,
@@ -462,10 +462,10 @@ fun DiscoverScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height((16 * scale).dp))
+                Spacer(modifier = Modifier.height((20 * scale).dp))
 
                 LazyRow(
-                    contentPadding = PaddingValues(horizontal = (24 * scale).dp),
+                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
                     horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
                 ) {
                     items(displayTracks) { track ->
@@ -511,7 +511,7 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((240 * scale).dp))
+                Spacer(modifier = Modifier.height((180.dp)))
             }
         }
 
@@ -523,12 +523,13 @@ fun DiscoverScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((80 * scale).dp)
+                    .height(110.dp)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
+                                Color(0xFF181818).copy(alpha = 0.85f),
                                 Color(0xFF181818)
                             )
                         )
@@ -538,16 +539,17 @@ fun DiscoverScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = (16 * scale).dp),
+                    .padding(bottom = 26.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .height((76 * scale).dp)
+                        .widthIn(max = 340.dp)
+                        .fillMaxWidth(0.86f)
+                        .height(56.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .padding(horizontal = (14 * scale).dp),
+                        .padding(start = 8.dp, end = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
@@ -556,48 +558,41 @@ fun DiscoverScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size((70 * scale).dp, (68 * scale).dp)
-                                .clip(RoundedCornerShape(100.dp))
+                                .size(40.dp)
+                                .clip(CircleShape)
                                 .background(Color(0xFF2C2C2C)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size((53 * scale).dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF373737))
-                            ) {
-                                if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
-                                    AsyncImage(
-                                        model = activeTrack.thumbnail,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
+                            if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
+                                AsyncImage(
+                                    model = activeTrack.thumbnail,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
 
-                        Spacer(modifier = Modifier.width((14 * scale).dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             BasicText(
                                 text = activeTrack?.title ?: "NKBİ",
                                 style = TextStyle(
                                     color = Color.White,
-                                    fontSize = (20 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
                                     fontFamily = FontFamily.SansSerif
                                 ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.height((2 * scale).dp))
+                            Spacer(modifier = Modifier.height(1.dp))
                             BasicText(
                                 text = activeTrack?.artist ?: "Güneş",
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
-                                    fontSize = (18 * scale).sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Normal,
                                     fontFamily = FontFamily.SansSerif
                                 ),
@@ -606,39 +601,40 @@ fun DiscoverScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width((10 * scale).dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         Box(
                             modifier = Modifier
-                                .size((40 * scale).dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
                                 .background(Color.White),
                             contentAlignment = Alignment.Center
                         ) {
                             FigmaPlayActionIcon(
-                                size = (18 * scale).dp,
+                                size = 14.dp,
                                 tint = Color.Black
                             )
                         }
 
-                        Spacer(modifier = Modifier.width((16 * scale).dp))
+                        Spacer(modifier = Modifier.width(14.dp))
 
                         FigmaSkipForwardActionIcon(
-                            size = (24 * scale).dp,
+                            size = 18.dp,
                             tint = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height((10 * scale).dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.94f)
-                        .height((76 * scale).dp)
+                        .widthIn(max = 340.dp)
+                        .fillMaxWidth(0.86f)
+                        .height(56.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .padding(horizontal = (10 * scale).dp),
+                        .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -648,34 +644,34 @@ fun DiscoverScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size((93 * scale).dp, (70 * scale).dp)
+                                .size(width = 48.dp, height = 36.dp)
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color.White.copy(alpha = 0.08f)),
                             contentAlignment = Alignment.Center
                         ) {
                             LucideTelescopeIcon(
-                                size = (32 * scale).dp,
+                                size = 22.dp,
                                 tint = Color.White
                             )
                         }
 
                         LucideMessageCircleHeartIcon(
-                            size = (32 * scale).dp,
+                            size = 22.dp,
                             tint = Color(0xFF8E8E93)
                         )
 
                         LucideFolderOpenIcon(
-                            size = (32 * scale).dp,
+                            size = 22.dp,
                             tint = Color(0xFF8E8E93)
                         )
 
                         LucideClockIcon(
-                            size = (32 * scale).dp,
+                            size = 22.dp,
                             tint = Color(0xFF8E8E93)
                         )
 
                         LucideCogIcon(
-                            size = (32 * scale).dp,
+                            size = 22.dp,
                             tint = Color(0xFF8E8E93)
                         )
                     }
