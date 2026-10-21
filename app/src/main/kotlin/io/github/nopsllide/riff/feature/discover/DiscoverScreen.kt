@@ -1,6 +1,7 @@
 package io.github.nopsllide.riff.feature.discover
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -52,13 +53,8 @@ import io.github.nopsllide.riff.core.designsystem.component.LucideCogIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideFolderOpenIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideMessageCircleHeartIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideSearchIcon
-import io.github.nopsllide.riff.core.designsystem.component.LucideTelescopeIcon
+import io.github.nopsllide.riff.core.model.Artist
 import io.github.nopsllide.riff.core.model.Track
-
-data class ArtistDisplay(
-    val name: String,
-    val imageUrl: String
-)
 
 private val defaultGlobalTracks = listOf(
     Track(id = "1", title = "HER GÜN AĞLADIM", artist = "Bege", album = "Single", duration = 210, thumbnail = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
@@ -70,16 +66,18 @@ private val defaultGlobalTracks = listOf(
 )
 
 private val defaultGlobalArtists = listOf(
-    ArtistDisplay("Bege", "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80"),
-    ArtistDisplay("Uzi", "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80"),
-    ArtistDisplay("Ben Fero", "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80"),
-    ArtistDisplay("The Weeknd", "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80"),
-    ArtistDisplay("Travis Scott", "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80")
+    Artist(id = "1", name = "The Weeknd", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/581693b4724a7fcfa754455101e13a44/500x500-000000-80-0-0.jpg"),
+    Artist(id = "2", name = "Taylor Swift", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/cc2495870fe1a792ad0cdb05501ad5ec/500x500-000000-80-0-0.jpg"),
+    Artist(id = "3", name = "Drake", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/eb0ed5b21d1ea5af021fc074ded0e91f/500x500-000000-80-0-0.jpg"),
+    Artist(id = "4", name = "Travis Scott", pictureUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80"),
+    Artist(id = "5", name = "BLOK3", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/bcd7669bc107dd4b066deb45a31b1f9d/500x500-000000-80-0-0.jpg"),
+    Artist(id = "6", name = "Dua Lipa", pictureUrl = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&auto=format&fit=crop&q=80")
 )
 
 @Composable
 fun DiscoverScreen(
     hotTracks: List<Track> = emptyList(),
+    popularArtists: List<Artist> = emptyList(),
     historyTracks: List<Track> = emptyList(),
     isLoading: Boolean = false,
     currentTrack: Track? = null,
@@ -90,6 +88,7 @@ fun DiscoverScreen(
     searchResults: List<Track> = emptyList(),
     isSearchLoading: Boolean = false,
     onTrackClick: (Track, List<Track>) -> Unit = { _, _ -> },
+    onArtistClick: (Artist) -> Unit = {},
     onFavoriteToggle: (Track) -> Unit = {},
     onRefreshWave: () -> Unit = {},
     onPlayWave: (List<Track>, Int) -> Unit = { _, _ -> },
@@ -97,17 +96,21 @@ fun DiscoverScreen(
 ) {
     val displayTracks = if (hotTracks.isNotEmpty()) hotTracks else defaultGlobalTracks
 
-    val artists = remember(displayTracks) {
-        val list = displayTracks.map { track ->
-            ArtistDisplay(
-                name = track.artist,
-                imageUrl = track.thumbnail
-            )
-        }.distinctBy { it.name }.filter { it.name.isNotBlank() }
-        if (list.isNotEmpty()) list else defaultGlobalArtists
+    val artists = remember(popularArtists, displayTracks) {
+        if (popularArtists.isNotEmpty()) {
+            popularArtists
+        } else {
+            val extracted = displayTracks.map { track ->
+                Artist(
+                    id = track.id,
+                    name = track.artist,
+                    pictureUrl = track.thumbnail
+                )
+            }.distinctBy { it.name }.filter { it.name.isNotBlank() }
+            if (extracted.isNotEmpty()) extracted else defaultGlobalArtists
+        }
     }
 
-    val primaryArtist = artists.firstOrNull()?.name ?: "Ezhel"
     val activeTrack = currentTrack ?: displayTracks.firstOrNull()
 
     BoxWithConstraints(
@@ -405,7 +408,7 @@ fun DiscoverScreen(
                 Spacer(modifier = Modifier.height((205 * scale).dp))
 
                 BasicText(
-                    text = "Because you listen to $primaryArtist",
+                    text = "Popular artists",
                     modifier = Modifier.padding(horizontal = (34 * scale).dp),
                     style = TextStyle(
                         color = Color.White,
@@ -424,7 +427,9 @@ fun DiscoverScreen(
                     items(artists) { artist ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.width((162 * scale).dp)
+                            modifier = Modifier
+                                .width((162 * scale).dp)
+                                .clickable { onArtistClick(artist) }
                         ) {
                             Box(
                                 modifier = Modifier
@@ -433,7 +438,7 @@ fun DiscoverScreen(
                                     .background(Color(0xFF373737))
                             ) {
                                 AsyncImage(
-                                    model = artist.imageUrl,
+                                    model = artist.pictureUrl,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
@@ -657,7 +662,7 @@ fun DiscoverScreen(
                                     .background(Color.White.copy(alpha = 0.05f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                LucideTelescopeIcon(
+                                AudioLinesLogoIcon(
                                     size = 28.dp,
                                     tint = Color.White
                                 )

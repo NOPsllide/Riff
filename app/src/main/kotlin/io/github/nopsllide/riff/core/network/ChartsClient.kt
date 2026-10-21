@@ -1,5 +1,6 @@
 package io.github.nopsllide.riff.core.network
 
+import io.github.nopsllide.riff.core.model.Artist
 import io.github.nopsllide.riff.core.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,7 +26,10 @@ private data class DeezerTrackItem(
 @Serializable
 private data class DeezerArtist(
     val id: Long? = null,
-    val name: String? = null
+    val name: String? = null,
+    val picture_big: String? = null,
+    val picture_medium: String? = null,
+    val picture_xl: String? = null
 )
 
 @Serializable
@@ -35,6 +39,20 @@ private data class DeezerAlbum(
     val cover_xl: String? = null,
     val cover_big: String? = null,
     val cover_medium: String? = null
+)
+
+@Serializable
+private data class DeezerArtistResponse(
+    val data: List<DeezerArtistItem> = emptyList()
+)
+
+@Serializable
+private data class DeezerArtistItem(
+    val id: Long? = null,
+    val name: String? = null,
+    val picture_big: String? = null,
+    val picture_medium: String? = null,
+    val picture_xl: String? = null
 )
 
 class ChartsClient(
@@ -77,6 +95,59 @@ class ChartsClient(
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    suspend fun getPopularArtists(limit: Int = 20): List<Artist> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("https://api.deezer.com/chart/0/artists?limit=30")
+            .header("User-Agent", "Riff-Android/42.3.0")
+            .build()
+
+        val ignored = listOf("???", "hörbuch", "hörbücher", "bibi", "tkkg", "hörspiel", "teufelskicker", "thriller", "die drei")
+
+        val chartArtists = try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) emptyList()
+                else {
+                    val body = response.body?.string() ?: ""
+                    val parsed = json.decodeFromString<DeezerArtistResponse>(body)
+                    parsed.data.filter { item ->
+                        val name = item.name ?: return@filter false
+                        ignored.none { name.contains(it, ignoreCase = true) }
+                    }.mapNotNull { item ->
+                        val name = item.name ?: return@mapNotNull null
+                        val pic = item.picture_big
+                            ?: item.picture_medium
+                            ?: item.picture_xl
+                            ?: ""
+                        Artist(
+                            id = "dz_art_${item.id ?: System.nanoTime()}",
+                            name = name,
+                            pictureUrl = pic
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        if (chartArtists.size >= 8) {
+            chartArtists.take(limit)
+        } else {
+            val trackArtists = try {
+                getHotPicks(30).map { track ->
+                    Artist(
+                        id = "trk_${track.id}",
+                        name = track.artist,
+                        pictureUrl = track.thumbnail
+                    )
+                }.distinctBy { it.name }.filter { it.name.isNotBlank() }
+            } catch (e: Exception) {
+                emptyList()
+            }
+            (chartArtists + trackArtists).distinctBy { it.name }.take(limit)
         }
     }
 }

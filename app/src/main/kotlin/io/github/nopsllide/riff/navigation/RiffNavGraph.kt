@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import io.github.nopsllide.riff.RiffApplication
 import io.github.nopsllide.riff.core.database.PlaylistEntity
 import io.github.nopsllide.riff.core.database.TrackEntity
+import io.github.nopsllide.riff.core.model.Artist
 import io.github.nopsllide.riff.core.model.Lyrics
 import io.github.nopsllide.riff.core.model.Playlist
 import io.github.nopsllide.riff.core.model.Track
@@ -80,6 +81,7 @@ fun RiffNavGraph(
     val playlists = playlistEntities.map { Playlist(id = it.id, title = it.title, trackCount = 0) }
 
     var hotTracks by remember { mutableStateOf<List<Track>>(emptyList()) }
+    var popularArtists by remember { mutableStateOf<List<Artist>>(emptyList()) }
     var isHotLoading by remember { mutableStateOf(true) }
 
     var searchQuery by remember { mutableStateOf("") }
@@ -107,6 +109,7 @@ fun RiffNavGraph(
         isHotLoading = true
         val picks = app.chartsClient.getHotPicks(20)
         hotTracks = if (picks.isNotEmpty()) picks else app.innertubeClient.search("Top Hits 2025", 15)
+        popularArtists = app.chartsClient.getPopularArtists(20)
         isHotLoading = false
     }
 
@@ -195,6 +198,7 @@ fun RiffNavGraph(
                     composable(Screen.Discover.route) {
                         DiscoverScreen(
                             hotTracks = hotTracks,
+                            popularArtists = popularArtists,
                             historyTracks = historyTracks,
                             isLoading = isHotLoading,
                             currentTrack = currentTrack,
@@ -205,12 +209,14 @@ fun RiffNavGraph(
                             searchResults = searchResults,
                             isSearchLoading = isSearchLoading,
                             onTrackClick = { t, q -> onTrackPlay(t, q) },
+                            onArtistClick = { artist -> searchQuery = artist.name },
                             onFavoriteToggle = { onFavoriteToggle(it) },
                             onRefreshWave = {
                                 scope.launch {
                                     isHotLoading = true
                                     val picks = app.chartsClient.getHotPicks(20)
                                     hotTracks = if (picks.isNotEmpty()) picks.shuffled() else app.innertubeClient.search("Top Hits 2025", 15)
+                                    popularArtists = app.chartsClient.getPopularArtists(20)
                                     isHotLoading = false
                                 }
                             },
