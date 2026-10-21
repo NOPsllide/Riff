@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,8 +37,8 @@ fun SquigglySlider(
     onValueChangeFinished: () -> Unit,
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
-    activeColor: Color = MaterialTheme.colorScheme.primary,
-    inactiveColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+    activeColor: Color = Color.White,
+    inactiveColor: Color = Color.White.copy(alpha = 0.2f),
     isWavy: Boolean = true
 ) {
     var isDragging by remember { mutableStateOf(false) }

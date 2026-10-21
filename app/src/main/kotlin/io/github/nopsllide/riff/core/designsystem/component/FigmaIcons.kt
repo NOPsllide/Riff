@@ -30,6 +30,12 @@ const val PATH_HEART_MSG = "M3.98933 21.7894C4.18539 22.2839 4.22903 22.8258 4.1
 const val PATH_FOLDER_OPEN = "M8 18.6667L10 14.8C10.2174 14.3682 10.5482 14.0036 10.9568 13.7453C11.3655 13.4869 11.8367 13.3445 12.32 13.3333H26.6667M26.6667 13.3333C27.074 13.3326 27.4762 13.4253 27.8422 13.6041C28.2082 13.783 28.5283 14.0433 28.7781 14.3652C29.0278 14.687 29.2005 15.0618 29.2829 15.4607C29.3653 15.8597 29.3552 16.2722 29.2533 16.6667L27.2 24.6667C27.0514 25.2421 26.7149 25.7514 26.2439 26.1137C25.7728 26.4761 25.1943 26.6707 24.6 26.6667H5.33333C4.62609 26.6667 3.94781 26.3857 3.44771 25.8856C2.94762 25.3855 2.66666 24.7073 2.66666 24V6.66667C2.66666 5.95943 2.94762 5.28115 3.44771 4.78105C3.94781 4.28096 4.62609 4.00001 5.33333 4.00001H10.5333C10.9793 3.99563 11.4193 4.10319 11.8129 4.31283C12.2066 4.52248 12.5414 4.82751 12.7867 5.20001L13.8667 6.80001C14.1095 7.16871 14.44 7.47137 14.8287 7.68081C15.2173 7.89025 15.6519 7.99993 16.0933 8.00001H24C24.7072 8.00001 25.3855 8.28096 25.8856 8.78105C26.3857 9.28115 26.6667 9.95943 26.6667 10.6667V13.3333Z"
 const val PATH_CLOCK = "M16 7.99996V16L21.3333 18.6666M29.3333 16C29.3333 23.3638 23.3638 29.3333 16 29.3333C8.63621 29.3333 2.66667 23.3638 2.66667 16C2.66667 8.63616 8.63621 2.66663 16 2.66663C23.3638 2.66663 29.3333 8.63616 29.3333 16Z"
 const val PATH_COG = "M14.6667 13.6933L9.33332 4.45329M14.6667 18.3066L9.33332 27.5466M16 29.3333V26.6666M16 26.6666C21.891 26.6666 26.6667 21.891 26.6667 16C26.6667 10.1089 21.891 5.33329 16 5.33329M16 26.6666C10.109 26.6666 5.33332 21.891 5.33332 16M16 2.66663V5.33329M16 5.33329C10.109 5.33329 5.33332 10.1089 5.33332 16M18.6667 16H29.3333M18.6667 16C18.6667 17.4727 17.4727 18.6666 16 18.6666C14.5272 18.6666 13.3333 17.4727 13.3333 16C13.3333 14.5272 14.5272 13.3333 16 13.3333C17.4727 13.3333 18.6667 14.5272 18.6667 16ZM22.6667 27.5466L21.3333 25.24M22.6667 4.45329L21.3333 6.75996M2.66666 16H5.33332M27.5467 22.6666L25.24 21.3333M27.5467 9.33329L25.24 10.6666M4.45332 22.6666L6.75999 21.3333M4.45332 9.33329L6.75999 10.6666"
+const val PATH_LUCIDE_X = "M18 6L6 18M6 6L18 18"
+const val PATH_LUCIDE_HEART = "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+const val PATH_LUCIDE_SHUFFLE = "M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"
+const val PATH_LUCIDE_SKIP_BACK = "M19 20L9 12l10-8v16zM5 19V5"
+const val PATH_LUCIDE_REPEAT = "m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"
+const val PATH_LUCIDE_PAUSE = "M6 4h4v16H6zM14 4h4v16h-4z"
 
 @Composable
 fun FigmaStrokedIcon(
@@ -177,4 +183,39 @@ fun LucideClockIcon(modifier: Modifier = Modifier, size: Dp = 26.dp, tint: Color
 @Composable
 fun LucideCogIcon(modifier: Modifier = Modifier, size: Dp = 26.dp, tint: Color = Color(0xFF8E8E93)) {
     FigmaStrokedIcon(pathData = PATH_COG, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 32f)
+}
+
+@Composable
+fun LucideXIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_X, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucideHeartOutlinedIcon(modifier: Modifier = Modifier, size: Dp = 34.dp, tint: Color = Color(0xFF8E8E93)) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_HEART, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucideShuffleIcon(modifier: Modifier = Modifier, size: Dp = 28.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_SHUFFLE, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucideSkipBackIcon(modifier: Modifier = Modifier, size: Dp = 28.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_SKIP_BACK, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucideSkipForwardIcon(modifier: Modifier = Modifier, size: Dp = 28.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_SKIP_FORWARD, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucideRepeatIcon(modifier: Modifier = Modifier, size: Dp = 28.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_REPEAT, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
+}
+
+@Composable
+fun LucidePauseIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: Color = Color.Black) {
+    FigmaFilledIcon(pathData = PATH_LUCIDE_PAUSE, modifier = modifier, size = size, tint = tint, viewportWidth = 24f, viewportHeight = 24f)
 }

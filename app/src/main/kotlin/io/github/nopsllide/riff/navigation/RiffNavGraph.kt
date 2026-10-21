@@ -1,6 +1,10 @@
 package io.github.nopsllide.riff.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -202,6 +206,10 @@ fun RiffNavGraph(
                             historyTracks = historyTracks,
                             isLoading = isHotLoading,
                             currentTrack = currentTrack,
+                            isPlaying = isPlaying,
+                            onPlayPauseToggle = { playbackManager.togglePlayPause() },
+                            onNextTrack = { playbackManager.playNext() },
+                            onOpenFullPlayer = { isFullPlayerVisible = true },
                             searchQuery = searchQuery,
                             onQueryChange = { searchQuery = it },
                             selectedPlatform = selectedPlatform,
@@ -283,8 +291,14 @@ fun RiffNavGraph(
 
         AnimatedVisibility(
             visible = isFullPlayerVisible,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it })
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 420, easing = CubicBezierEasing(0.32f, 0.72f, 0f, 1f))
+            ) + fadeIn(animationSpec = tween(durationMillis = 280)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 360, easing = CubicBezierEasing(0.32f, 0.72f, 0f, 1f))
+            ) + fadeOut(animationSpec = tween(durationMillis = 220))
         ) {
             FullPlayerScreen(
                 currentTrack = currentTrack,
@@ -296,6 +310,9 @@ fun RiffNavGraph(
                 isRepeat = isRepeat,
                 isWavyEnabled = isWavyEnabled,
                 isBassPulseEnabled = isBassPulseEnabled,
+                lyrics = currentLyrics,
+                isLyricsLoading = isLyricsLoading,
+                dominantColor = customPrimaryColor,
                 onPlayPauseClick = { playbackManager.togglePlayPause() },
                 onNextClick = { playbackManager.playNext() },
                 onPrevClick = { playbackManager.playPrevious() },

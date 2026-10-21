@@ -104,8 +104,12 @@ class PlaybackManager(
         scope.launch {
             val streamUrl = track.streamUrl ?: if (track.platform == "youtube") {
                 innertubeClient.resolveStreamUrl(track.id)
-            } else {
+            } else if (track.url.isNotBlank()) {
                 track.url
+            } else {
+                val searchCandidates = innertubeClient.search("${track.artist} - ${track.title}", 1)
+                val targetId = searchCandidates.firstOrNull()?.id
+                if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
             }
 
             if (streamUrl != null) {
