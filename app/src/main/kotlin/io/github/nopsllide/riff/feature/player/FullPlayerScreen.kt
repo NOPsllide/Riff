@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,7 +60,6 @@ import io.github.nopsllide.riff.core.model.Track
 @Composable
 fun FullPlayerScreen(
     currentTrack: Track?,
-    isFavorite: Boolean = false,
     isPlaying: Boolean,
     isBuffering: Boolean,
     currentPositionMs: Long,
@@ -77,13 +77,7 @@ fun FullPlayerScreen(
     onSeekTo: (Long) -> Unit,
     onToggleShuffle: () -> Unit = {},
     onToggleRepeat: () -> Unit = {},
-    onToggleFavorite: () -> Unit = {},
     onDismiss: () -> Unit,
-    onOpenLyrics: () -> Unit = {},
-    onOpenEqualizer: () -> Unit = {},
-    onOpenTvKaraoke: () -> Unit = {},
-    onOpenQueue: () -> Unit = {},
-    onOpenSleepTimer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val lyricsListState = rememberLazyListState()
@@ -225,19 +219,10 @@ fun FullPlayerScreen(
 
                 Spacer(modifier = Modifier.width((16 * scale).dp))
 
-                Box(
-                    modifier = Modifier
-                        .size((64 * scale).dp)
-                        .clip(RoundedCornerShape((14 * scale).dp))
-                        .background(Color(0xFF212121))
-                        .clickable { onToggleFavorite() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    LucideHeartOutlinedIcon(
-                        size = (30 * scale).dp,
-                        tint = if (isFavorite) Color(0xFFFF4081) else Color(0xFF8E8E93)
-                    )
-                }
+                LucideHeartOutlinedIcon(
+                    size = (34 * scale).dp,
+                    tint = Color(0xFF8E8E93)
+                )
             }
 
             Spacer(modifier = Modifier.height((20 * scale).dp))
@@ -276,7 +261,7 @@ fun FullPlayerScreen(
                                 TextStyle(
                                     color = Color(0xFF8E8E93),
                                     fontSize = (32 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
+                                    fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.SansSerif
                                 )
                             }
@@ -308,7 +293,7 @@ fun FullPlayerScreen(
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
                                     fontSize = (28 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
+                                    fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.SansSerif
                                 ),
                                 modifier = Modifier.fillMaxWidth()
@@ -340,7 +325,7 @@ fun FullPlayerScreen(
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
                                     fontSize = (22 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
+                                    fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.SansSerif,
                                     textAlign = TextAlign.Center
                                 )
@@ -416,7 +401,7 @@ fun FullPlayerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height((16 * scale).dp))
+            Spacer(modifier = Modifier.height((32 * scale).dp))
 
             Row(
                 modifier = Modifier
@@ -495,7 +480,8 @@ fun FullPlayerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height((24 * scale).dp))
+            Spacer(modifier = Modifier.height((56 * scale).dp))
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }
 }
