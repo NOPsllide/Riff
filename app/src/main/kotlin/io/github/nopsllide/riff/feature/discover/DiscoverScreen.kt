@@ -124,7 +124,7 @@ fun DiscoverScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.statusBarsPadding())
-                Spacer(modifier = Modifier.height((62 * scale).dp))
+                Spacer(modifier = Modifier.height((12 * scale).dp))
 
                 Row(
                     modifier = Modifier
@@ -329,17 +329,17 @@ fun DiscoverScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size((400 * scale).dp)
-                            .blur(600.dp)
+                            .fillMaxWidth()
+                            .height((380 * scale).dp)
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.08f),
+                                        Color.White.copy(alpha = 0.045f),
                                         Color.White.copy(alpha = 0.03f),
+                                        Color.White.copy(alpha = 0.012f),
                                         Color.Transparent
                                     )
-                                ),
-                                shape = CircleShape
+                                )
                             )
                     )
 
@@ -554,7 +554,7 @@ fun DiscoverScreen(
                         .size(musicCardWidth, 64.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .padding(start = 6.dp, end = 16.dp),
+                        .padding(start = 7.dp, end = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
@@ -563,25 +563,18 @@ fun DiscoverScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(54.dp, 52.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color(0xFF2C2C2C)),
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF373737)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF373737))
-                            ) {
-                                if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
-                                    AsyncImage(
-                                        model = activeTrack.thumbnail,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
+                            if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
+                                AsyncImage(
+                                    model = activeTrack.thumbnail,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
                         }
 
@@ -643,7 +636,8 @@ fun DiscoverScreen(
                     modifier = Modifier
                         .size(navWidth, 66.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF212121)),
+                        .background(Color(0xFF212121))
+                        .padding(5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -658,10 +652,7 @@ fun DiscoverScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(
-                                        width = (navWidth / 5) - 4.dp,
-                                        height = 58.dp
-                                    )
+                                    .fillMaxSize()
                                     .clip(RoundedCornerShape(100.dp))
                                     .background(Color.White.copy(alpha = 0.05f)),
                                 contentAlignment = Alignment.Center
