@@ -116,23 +116,8 @@ fun DiscoverScreen(
             .background(Color(0xFF181818))
     ) {
         val scale = (maxWidth.value / 606f).coerceIn(0.55f, 1.15f)
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .offset(x = (-40 * scale).dp, y = (-20 * scale).dp)
-                .size((240 * scale).dp, (220 * scale).dp)
-                .blur(160.dp)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.05f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = CircleShape
-                )
-        )
+        val navWidth = (maxWidth * 0.90f).coerceIn(340.dp, 380.dp)
+        val musicCardWidth = navWidth * 0.95f
 
         LazyColumn(
             modifier = Modifier.fillMaxSize()
@@ -338,62 +323,83 @@ fun DiscoverScreen(
 
                 Spacer(modifier = Modifier.height((82 * scale).dp))
 
-                Column(modifier = Modifier.padding(horizontal = (28 * scale).dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        BasicText(
-                            text = "My Wave",
-                            style = TextStyle(
-                                color = Color.White,
-                                fontSize = (32 * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .size((185 * scale).dp, (54 * scale).dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                FigmaPlayActionIcon(
-                                    size = (20 * scale).dp,
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width((8 * scale).dp))
-                                BasicText(
-                                    text = "Play wave",
-                                    style = TextStyle(
-                                        color = Color.Black,
-                                        fontSize = (21 * scale).sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.SansSerif
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size((400 * scale).dp)
+                            .blur(600.dp)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.08f),
+                                        Color.White.copy(alpha = 0.03f),
+                                        Color.Transparent
                                     )
+                                ),
+                                shape = CircleShape
+                            )
+                    )
+
+                    Column(modifier = Modifier.padding(horizontal = (28 * scale).dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BasicText(
+                                text = "My Wave",
+                                style = TextStyle(
+                                    color = Color.White,
+                                    fontSize = (32 * scale).sp,
+                                    fontWeight = FontWeight.Normal,
+                                    fontFamily = FontFamily.SansSerif
                                 )
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size((185 * scale).dp, (54 * scale).dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    FigmaPlayActionIcon(
+                                        size = (20 * scale).dp,
+                                        tint = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.width((8 * scale).dp))
+                                    BasicText(
+                                        text = "Play wave",
+                                        style = TextStyle(
+                                            color = Color.Black,
+                                            fontSize = (21 * scale).sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.SansSerif
+                                        )
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height((175 * scale).dp))
+                        Spacer(modifier = Modifier.height((175 * scale).dp))
 
-                    BasicText(
-                        text = "Save at least 5 tracks to tune\nMy Wave to your traste.",
-                        modifier = Modifier.fillMaxWidth(),
-                        style = TextStyle(
-                            color = Color(0xFF8E8E93),
-                            fontSize = (21 * scale).sp,
-                            lineHeight = (28 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif,
-                            textAlign = TextAlign.Center
+                        BasicText(
+                            text = "Save at least 5 tracks to tune\nMy Wave to your traste.",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TextStyle(
+                                color = Color(0xFF8E8E93),
+                                fontSize = (21 * scale).sp,
+                                lineHeight = (28 * scale).sp,
+                                fontWeight = FontWeight.Normal,
+                                fontFamily = FontFamily.SansSerif,
+                                textAlign = TextAlign.Center
+                            )
                         )
-                    )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height((205 * scale).dp))
@@ -512,7 +518,7 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((220 * scale).dp))
+                Spacer(modifier = Modifier.height(200.dp))
             }
         }
 
@@ -524,7 +530,7 @@ fun DiscoverScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((200 * scale).dp)
+                    .height(180.dp)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
@@ -540,15 +546,15 @@ fun DiscoverScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = (36 * scale).dp),
+                    .padding(bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .size((446 * scale).dp, (76 * scale).dp)
+                        .size(musicCardWidth, 64.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .padding(start = (6 * scale).dp, end = (16 * scale).dp),
+                        .padding(start = 6.dp, end = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
@@ -557,14 +563,14 @@ fun DiscoverScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size((70 * scale).dp, (68 * scale).dp)
+                                .size(54.dp, 52.dp)
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFF2C2C2C)),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size((53 * scale).dp)
+                                    .size(40.dp)
                                     .clip(CircleShape)
                                     .background(Color(0xFF373737))
                             ) {
@@ -579,26 +585,26 @@ fun DiscoverScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.width((14 * scale).dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             BasicText(
                                 text = activeTrack?.title ?: "NKBİ",
                                 style = TextStyle(
                                     color = Color.White,
-                                    fontSize = (20 * scale).sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Medium,
                                     fontFamily = FontFamily.SansSerif
                                 ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.height((2 * scale).dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             BasicText(
                                 text = activeTrack?.artist ?: "Güneş",
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
-                                    fontSize = (18 * scale).sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Normal,
                                     fontFamily = FontFamily.SansSerif
                                 ),
@@ -607,35 +613,35 @@ fun DiscoverScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width((10 * scale).dp))
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         Box(
                             modifier = Modifier
-                                .size((48 * scale).dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color.White),
                             contentAlignment = Alignment.Center
                         ) {
                             FigmaPlayActionIcon(
-                                size = (20 * scale).dp,
+                                size = 18.dp,
                                 tint = Color.Black
                             )
                         }
 
-                        Spacer(modifier = Modifier.width((16 * scale).dp))
+                        Spacer(modifier = Modifier.width(14.dp))
 
                         FigmaSkipForwardActionIcon(
-                            size = (24 * scale).dp,
+                            size = 20.dp,
                             tint = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height((12 * scale).dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Box(
                     modifier = Modifier
-                        .size((470 * scale).dp, (76 * scale).dp)
+                        .size(navWidth, 66.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121)),
                     contentAlignment = Alignment.Center
@@ -653,15 +659,15 @@ fun DiscoverScreen(
                             Box(
                                 modifier = Modifier
                                     .size(
-                                        width = (93 * scale).dp,
-                                        height = (70 * scale).dp
+                                        width = (navWidth / 5) - 4.dp,
+                                        height = 58.dp
                                     )
                                     .clip(RoundedCornerShape(100.dp))
                                     .background(Color.White.copy(alpha = 0.05f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 LucideTelescopeIcon(
-                                    size = (32 * scale).dp,
+                                    size = 28.dp,
                                     tint = Color.White
                                 )
                             }
@@ -674,7 +680,7 @@ fun DiscoverScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             LucideMessageCircleHeartIcon(
-                                size = (32 * scale).dp,
+                                size = 28.dp,
                                 tint = Color(0xFF8E8E93)
                             )
                         }
@@ -686,7 +692,7 @@ fun DiscoverScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             LucideFolderOpenIcon(
-                                size = (32 * scale).dp,
+                                size = 28.dp,
                                 tint = Color(0xFF8E8E93)
                             )
                         }
@@ -698,7 +704,7 @@ fun DiscoverScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             LucideClockIcon(
-                                size = (32 * scale).dp,
+                                size = 28.dp,
                                 tint = Color(0xFF8E8E93)
                             )
                         }
@@ -710,7 +716,7 @@ fun DiscoverScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             LucideCogIcon(
-                                size = (32 * scale).dp,
+                                size = 28.dp,
                                 tint = Color(0xFF8E8E93)
                             )
                         }
