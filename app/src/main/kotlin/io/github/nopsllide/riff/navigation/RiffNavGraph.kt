@@ -233,6 +233,33 @@ fun RiffNavGraph(
                                     val idx = startIdx.coerceIn(0, list.size - 1)
                                     onTrackPlay(list[idx], list)
                                 }
+                            },
+                            onNavigateToFavorites = {
+                                currentRoute = Screen.Favorites.route
+                                navController.navigate(Screen.Favorites.route) {
+                                    popUpTo(Screen.Discover.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onNavigateToLibrary = {
+                                currentRoute = Screen.Local.route
+                                navController.navigate(Screen.Local.route) {
+                                    popUpTo(Screen.Discover.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onNavigateToHistory = {
+                                currentRoute = Screen.History.route
+                                navController.navigate(Screen.History.route) {
+                                    popUpTo(Screen.Discover.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onNavigateToSettings = {
+                                isSettingsVisible = true
                             }
                         )
                     }
@@ -301,7 +328,8 @@ fun RiffNavGraph(
             ) + fadeOut(animationSpec = tween(durationMillis = 220))
         ) {
             FullPlayerScreen(
-                currentTrack = currentTrack,
+                currentTrack = currentTrack ?: hotTracks.firstOrNull(),
+                isFavorite = favoriteTracks.any { it.id == (currentTrack?.id ?: hotTracks.firstOrNull()?.id) },
                 isPlaying = isPlaying,
                 isBuffering = isBuffering,
                 currentPositionMs = currentPositionMs,
@@ -313,13 +341,30 @@ fun RiffNavGraph(
                 lyrics = currentLyrics,
                 isLyricsLoading = isLyricsLoading,
                 dominantColor = customPrimaryColor,
-                onPlayPauseClick = { playbackManager.togglePlayPause() },
-                onNextClick = { playbackManager.playNext() },
+                onPlayPauseClick = {
+                    if (playbackManager.currentTrack.value == null && hotTracks.isNotEmpty()) {
+                        playbackManager.playTrack(hotTracks.first(), hotTracks)
+                    } else {
+                        playbackManager.togglePlayPause()
+                    }
+                },
+                onNextClick = {
+                    if (playbackManager.currentTrack.value == null && hotTracks.isNotEmpty()) {
+                        playbackManager.playTrack(hotTracks.first(), hotTracks)
+                    } else {
+                        playbackManager.playNext()
+                    }
+                },
                 onPrevClick = { playbackManager.playPrevious() },
                 onSeekTo = { playbackManager.seekTo(it) },
                 onToggleShuffle = { playbackManager.toggleShuffle() },
                 onToggleRepeat = { playbackManager.toggleRepeat() },
-                onToggleFavorite = { currentTrack?.let { onFavoriteToggle(it) } },
+                onToggleFavorite = {
+                    val trk = currentTrack ?: hotTracks.firstOrNull()
+                    if (trk != null) {
+                        onFavoriteToggle(trk)
+                    }
+                },
                 onDismiss = { isFullPlayerVisible = false },
                 onOpenLyrics = { isLyricsVisible = true },
                 onOpenEqualizer = { isEqualizerVisible = true },

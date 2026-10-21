@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import io.github.nopsllide.riff.core.designsystem.component.FigmaPlayActionIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideHeartOutlinedIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucidePauseIcon
@@ -57,6 +59,7 @@ import io.github.nopsllide.riff.core.model.Track
 @Composable
 fun FullPlayerScreen(
     currentTrack: Track?,
+    isFavorite: Boolean = false,
     isPlaying: Boolean,
     isBuffering: Boolean,
     currentPositionMs: Long,
@@ -83,8 +86,6 @@ fun FullPlayerScreen(
     onOpenSleepTimer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    if (currentTrack == null) return
-
     val lyricsListState = rememberLazyListState()
 
     val syncedLines = lyrics?.syncedLines ?: emptyList()
@@ -198,7 +199,7 @@ fun FullPlayerScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     BasicText(
-                        text = currentTrack.title,
+                        text = currentTrack?.title ?: "Şarkı seçilmedi",
                         style = TextStyle(
                             color = Color.White,
                             fontSize = (23 * scale).sp,
@@ -210,7 +211,7 @@ fun FullPlayerScreen(
                     )
                     Spacer(modifier = Modifier.height((4 * scale).dp))
                     BasicText(
-                        text = currentTrack.artist,
+                        text = currentTrack?.artist ?: "Riff",
                         style = TextStyle(
                             color = Color(0xFF8E8E93),
                             fontSize = (21 * scale).sp,
@@ -228,12 +229,13 @@ fun FullPlayerScreen(
                     modifier = Modifier
                         .size((64 * scale).dp)
                         .clip(RoundedCornerShape((14 * scale).dp))
-                        .background(Color(0xFF212121)),
+                        .background(Color(0xFF212121))
+                        .clickable { onToggleFavorite() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideHeartOutlinedIcon(
                         size = (30 * scale).dp,
-                        tint = Color(0xFF8E8E93)
+                        tint = if (isFavorite) Color(0xFFFF4081) else Color(0xFF8E8E93)
                     )
                 }
             }
@@ -318,16 +320,32 @@ fun FullPlayerScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        BasicText(
-                            text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
-                            style = TextStyle(
-                                color = Color(0xFF8E8E93),
-                                fontSize = (22 * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                                fontFamily = FontFamily.SansSerif,
-                                textAlign = TextAlign.Center
+                        if (currentTrack != null && currentTrack.thumbnail.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .size((340 * scale).dp)
+                                    .clip(RoundedCornerShape((32 * scale).dp))
+                                    .background(Color(0xFF242424))
+                            ) {
+                                AsyncImage(
+                                    model = currentTrack.thumbnail,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        } else {
+                            BasicText(
+                                text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
+                                style = TextStyle(
+                                    color = Color(0xFF8E8E93),
+                                    fontSize = (22 * scale).sp,
+                                    fontWeight = FontWeight.Normal,
+                                    fontFamily = FontFamily.SansSerif,
+                                    textAlign = TextAlign.Center
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
@@ -408,17 +426,21 @@ fun FullPlayerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
-                    modifier = Modifier.size((48 * scale).dp),
+                    modifier = Modifier
+                        .size((48 * scale).dp)
+                        .clickable { onToggleShuffle() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideShuffleIcon(
                         size = (26 * scale).dp,
-                        tint = Color.White
+                        tint = if (isShuffle) Color.White else Color(0xFF8E8E93)
                     )
                 }
 
                 Box(
-                    modifier = Modifier.size((48 * scale).dp),
+                    modifier = Modifier
+                        .size((48 * scale).dp)
+                        .clickable { onPrevClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideSkipBackIcon(
@@ -449,7 +471,9 @@ fun FullPlayerScreen(
                 }
 
                 Box(
-                    modifier = Modifier.size((48 * scale).dp),
+                    modifier = Modifier
+                        .size((48 * scale).dp)
+                        .clickable { onNextClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideSkipForwardIcon(
@@ -459,12 +483,14 @@ fun FullPlayerScreen(
                 }
 
                 Box(
-                    modifier = Modifier.size((48 * scale).dp),
+                    modifier = Modifier
+                        .size((48 * scale).dp)
+                        .clickable { onToggleRepeat() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideRepeatIcon(
                         size = (26 * scale).dp,
-                        tint = Color.White
+                        tint = if (isRepeat) Color.White else Color(0xFF8E8E93)
                     )
                 }
             }

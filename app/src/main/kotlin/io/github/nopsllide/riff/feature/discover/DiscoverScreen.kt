@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -57,24 +59,6 @@ import io.github.nopsllide.riff.core.designsystem.component.LucideSearchIcon
 import io.github.nopsllide.riff.core.model.Artist
 import io.github.nopsllide.riff.core.model.Track
 
-private val defaultGlobalTracks = listOf(
-    Track(id = "1", title = "HER GÜN AĞLADIM", artist = "Bege", album = "Single", duration = 210, thumbnail = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "2", title = "NKBİ", artist = "Güneş", album = "Atlantis", duration = 185, thumbnail = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "3", title = "Süzüler", artist = "Gazapizm", album = "Single", duration = 240, thumbnail = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "4", title = "Starboy", artist = "The Weeknd", album = "Starboy", duration = 230, thumbnail = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "5", title = "FE!N", artist = "Travis Scott", album = "UTOPIA", duration = 191, thumbnail = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube"),
-    Track(id = "6", title = "Levitating", artist = "Dua Lipa", album = "Future Nostalgia", duration = 203, thumbnail = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&auto=format&fit=crop&q=80", url = "", platform = "youtube")
-)
-
-private val defaultGlobalArtists = listOf(
-    Artist(id = "1", name = "The Weeknd", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/581693b4724a7fcfa754455101e13a44/500x500-000000-80-0-0.jpg"),
-    Artist(id = "2", name = "Taylor Swift", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/cc2495870fe1a792ad0cdb05501ad5ec/500x500-000000-80-0-0.jpg"),
-    Artist(id = "3", name = "Drake", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/eb0ed5b21d1ea5af021fc074ded0e91f/500x500-000000-80-0-0.jpg"),
-    Artist(id = "4", name = "Travis Scott", pictureUrl = "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&auto=format&fit=crop&q=80"),
-    Artist(id = "5", name = "BLOK3", pictureUrl = "https://cdn-images.dzcdn.net/images/artist/bcd7669bc107dd4b066deb45a31b1f9d/500x500-000000-80-0-0.jpg"),
-    Artist(id = "6", name = "Dua Lipa", pictureUrl = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&auto=format&fit=crop&q=80")
-)
-
 @Composable
 fun DiscoverScreen(
     hotTracks: List<Track> = emptyList(),
@@ -97,25 +81,14 @@ fun DiscoverScreen(
     onFavoriteToggle: (Track) -> Unit = {},
     onRefreshWave: () -> Unit = {},
     onPlayWave: (List<Track>, Int) -> Unit = { _, _ -> },
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToLibrary: () -> Unit = {},
+    onNavigateToHistory: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val displayTracks = if (hotTracks.isNotEmpty()) hotTracks else defaultGlobalTracks
-
-    val artists = remember(popularArtists, displayTracks) {
-        if (popularArtists.isNotEmpty()) {
-            popularArtists
-        } else {
-            val extracted = displayTracks.map { track ->
-                Artist(
-                    id = track.id,
-                    name = track.artist,
-                    pictureUrl = track.thumbnail
-                )
-            }.distinctBy { it.name }.filter { it.name.isNotBlank() }
-            if (extracted.isNotEmpty()) extracted else defaultGlobalArtists
-        }
-    }
-
+    val displayTracks = hotTracks
+    val artists = popularArtists
     val activeTrack = currentTrack ?: displayTracks.firstOrNull()
 
     BoxWithConstraints(
@@ -179,15 +152,32 @@ fun DiscoverScreen(
                                 tint = Color(0xFF8E8E93)
                             )
                             Spacer(modifier = Modifier.width((12 * scale).dp))
-                            BasicText(
-                                text = "Search tracks, artists.",
-                                style = TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (22 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
-                                    fontFamily = FontFamily.SansSerif
+                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                                if (searchQuery.isEmpty()) {
+                                    BasicText(
+                                        text = "Search tracks, artists.",
+                                        style = TextStyle(
+                                            color = Color(0xFF8E8E93),
+                                            fontSize = (20 * scale).sp,
+                                            fontWeight = FontWeight.Normal,
+                                            fontFamily = FontFamily.SansSerif
+                                        )
+                                    )
+                                }
+                                BasicTextField(
+                                    value = searchQuery,
+                                    onValueChange = onQueryChange,
+                                    singleLine = true,
+                                    cursorBrush = SolidColor(Color.White),
+                                    textStyle = TextStyle(
+                                        color = Color.White,
+                                        fontSize = (20 * scale).sp,
+                                        fontWeight = FontWeight.Normal,
+                                        fontFamily = FontFamily.SansSerif
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                            )
+                            }
                         }
                     }
 
@@ -208,164 +198,152 @@ fun DiscoverScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
-                                modifier = Modifier.size((42 * scale).dp),
+                                modifier = Modifier
+                                    .size((42 * scale).dp)
+                                    .clickable { onPlatformSelect("youtube") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaYouTubeLogoIcon(
                                     size = (22 * scale).dp,
-                                    tint = Color(0xFF8E8E93)
+                                    tint = if (selectedPlatform == "youtube") Color.White else Color(0xFF8E8E93)
                                 )
                             }
                             Box(
                                 modifier = Modifier
                                     .size((52 * scale).dp, (42 * scale).dp)
                                     .clip(RoundedCornerShape(100.dp))
-                                    .background(Color.White.copy(alpha = 0.08f)),
+                                    .background(if (selectedPlatform == "youtubemusic") Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f))
+                                    .clickable { onPlatformSelect("youtubemusic") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaYouTubeMusicLogoIcon(
                                     size = (20 * scale).dp,
-                                    tint = Color(0xFF8E8E93)
+                                    tint = if (selectedPlatform == "youtubemusic") Color.White else Color(0xFF8E8E93)
                                 )
                             }
                             Box(
-                                modifier = Modifier.size((42 * scale).dp),
+                                modifier = Modifier
+                                    .size((42 * scale).dp)
+                                    .clickable { onPlatformSelect("soundcloud") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 FigmaSoundCloudLogoIcon(
                                     size = (20 * scale).dp,
-                                    tint = Color(0xFF8E8E93)
+                                    tint = if (selectedPlatform == "soundcloud") Color.White else Color(0xFF8E8E93)
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height((62 * scale).dp))
+                Spacer(modifier = Modifier.height((30 * scale).dp))
+            }
 
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
-                    horizontalArrangement = Arrangement.spacedBy((10 * scale).dp)
-                ) {
+            if (searchQuery.isNotBlank()) {
+                if (isSearchLoading) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .height((53 * scale).dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color.White.copy(alpha = 0.08f))
-                                .padding(horizontal = (24 * scale).dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BasicText(
-                                text = "All",
-                                style = TextStyle(
-                                    color = Color.White,
-                                    fontSize = (22 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
-                                    fontFamily = FontFamily.SansSerif
-                                )
-                            )
-                        }
-                    }
-                    val tabsList = listOf("Relax", "Workout", "Electronic", "Rock")
-                    items(tabsList) { tabName ->
-                        Box(
-                            modifier = Modifier
-                                .height((53 * scale).dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color.White.copy(alpha = 0.04f))
-                                .padding(horizontal = (24 * scale).dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BasicText(
-                                text = tabName,
-                                style = TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (22 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
-                                    fontFamily = FontFamily.SansSerif
-                                )
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height((53 * scale).dp))
-
-                Column(modifier = Modifier.padding(horizontal = (26 * scale).dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
                         BasicText(
-                            text = "Jump back in",
-                            style = TextStyle(
-                                color = Color.White,
-                                fontSize = (26 * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        )
-                        BasicText(
-                            text = "Recently played",
-                            style = TextStyle(
-                                color = Color(0xFF8E8E93),
-                                fontSize = (20 * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                                fontFamily = FontFamily.SansSerif
-                            )
+                            text = "Searching...",
+                            modifier = Modifier.padding(horizontal = (26 * scale).dp, vertical = 20.dp),
+                            style = TextStyle(color = Color(0xFF8E8E93), fontSize = (18 * scale).sp)
                         )
                     }
-                    Spacer(modifier = Modifier.height((31 * scale).dp))
-                    BasicText(
-                        text = "Play some tracks to see them here",
-                        style = TextStyle(
-                            color = Color(0xFF8E8E93),
-                            fontSize = (20 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height((82 * scale).dp))
-
-                Column(modifier = Modifier.padding(horizontal = (28 * scale).dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                } else if (searchResults.isEmpty()) {
+                    item {
                         BasicText(
-                            text = "My Wave",
-                            style = TextStyle(
-                                color = Color.White,
-                                fontSize = (32 * scale).sp,
-                                fontWeight = FontWeight.Normal,
-                                fontFamily = FontFamily.SansSerif
-                            )
+                            text = "No results found",
+                            modifier = Modifier.padding(horizontal = (26 * scale).dp, vertical = 20.dp),
+                            style = TextStyle(color = Color(0xFF8E8E93), fontSize = (18 * scale).sp)
                         )
-
-                        Box(
+                    }
+                } else {
+                    items(searchResults) { track ->
+                        Row(
                             modifier = Modifier
-                                .size((185 * scale).dp, (54 * scale).dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .clickable { onTrackClick(track, searchResults) }
+                                .padding(horizontal = (26 * scale).dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                FigmaPlayActionIcon(
-                                    size = (20 * scale).dp,
-                                    tint = Color.Black
-                                )
-                                Spacer(modifier = Modifier.width((8 * scale).dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFF373737))
+                            ) {
+                                if (track.thumbnail.isNotBlank()) {
+                                    AsyncImage(
+                                        model = track.thumbnail,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 BasicText(
-                                    text = "Play wave",
+                                    text = track.title,
+                                    style = TextStyle(color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                BasicText(
+                                    text = track.artist,
+                                    style = TextStyle(color = Color(0xFF8E8E93), fontSize = 13.sp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(200.dp))
+                }
+            } else {
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = (26 * scale).dp),
+                        horizontalArrangement = Arrangement.spacedBy((10 * scale).dp)
+                    ) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .height((53 * scale).dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .padding(horizontal = (24 * scale).dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicText(
+                                    text = "All",
                                     style = TextStyle(
-                                        color = Color.Black,
-                                        fontSize = (21 * scale).sp,
-                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = (22 * scale).sp,
+                                        fontWeight = FontWeight.Normal,
+                                        fontFamily = FontFamily.SansSerif
+                                    )
+                                )
+                            }
+                        }
+                        val tabsList = listOf("Relax", "Workout", "Electronic", "Rock")
+                        items(tabsList) { tabName ->
+                            Box(
+                                modifier = Modifier
+                                    .height((53 * scale).dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White.copy(alpha = 0.04f))
+                                    .padding(horizontal = (24 * scale).dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicText(
+                                    text = tabName,
+                                    style = TextStyle(
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = (22 * scale).sp,
+                                        fontWeight = FontWeight.Normal,
                                         fontFamily = FontFamily.SansSerif
                                     )
                                 )
@@ -373,141 +351,274 @@ fun DiscoverScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height((175 * scale).dp))
+                    Spacer(modifier = Modifier.height((53 * scale).dp))
 
-                    BasicText(
-                        text = "Save at least 5 tracks to tune\nMy Wave to your taste.",
-                        modifier = Modifier.fillMaxWidth(),
-                        style = TextStyle(
-                            color = Color(0xFF8E8E93),
-                            fontSize = (21 * scale).sp,
-                            lineHeight = (28 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif,
-                            textAlign = TextAlign.Center
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height((205 * scale).dp))
-
-                BasicText(
-                    text = "Popular artists",
-                    modifier = Modifier.padding(horizontal = (34 * scale).dp),
-                    style = TextStyle(
-                        color = Color.White,
-                        fontSize = (26 * scale).sp,
-                        fontWeight = FontWeight.Normal,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                )
-
-                Spacer(modifier = Modifier.height((27 * scale).dp))
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
-                    horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
-                ) {
-                    items(artists) { artist ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .width((162 * scale).dp)
-                                .clickable { onArtistClick(artist) }
+                    Column(modifier = Modifier.padding(horizontal = (26 * scale).dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size((162 * scale).dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF373737))
-                            ) {
-                                AsyncImage(
-                                    model = artist.pictureUrl,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                            Spacer(modifier = Modifier.height((10 * scale).dp))
                             BasicText(
-                                text = artist.name,
-                                style = TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (20 * scale).sp,
-                                    fontWeight = FontWeight.Normal,
-                                    fontFamily = FontFamily.SansSerif,
-                                    textAlign = TextAlign.Center
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height((48 * scale).dp))
-
-                BasicText(
-                    text = "New for you",
-                    modifier = Modifier.padding(horizontal = (26 * scale).dp),
-                    style = TextStyle(
-                        color = Color.White,
-                        fontSize = (26 * scale).sp,
-                        fontWeight = FontWeight.Normal,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                )
-
-                Spacer(modifier = Modifier.height((20 * scale).dp))
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = (26 * scale).dp),
-                    horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
-                ) {
-                    items(displayTracks) { track ->
-                        Column(modifier = Modifier.width((217 * scale).dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size((217 * scale).dp)
-                                    .clip(RoundedCornerShape((24 * scale).dp))
-                                    .background(Color(0xFF373737))
-                            ) {
-                                AsyncImage(
-                                    model = track.thumbnail,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                            Spacer(modifier = Modifier.height((10 * scale).dp))
-                            BasicText(
-                                text = track.title,
+                                text = "Jump back in",
                                 style = TextStyle(
                                     color = Color.White,
-                                    fontSize = (20 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontSize = (26 * scale).sp,
+                                    fontWeight = FontWeight.Normal,
                                     fontFamily = FontFamily.SansSerif
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                )
                             )
-                            Spacer(modifier = Modifier.height((4 * scale).dp))
                             BasicText(
-                                text = track.artist,
+                                text = "Recently played",
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
                                     fontSize = (20 * scale).sp,
                                     fontWeight = FontWeight.Normal,
                                     fontFamily = FontFamily.SansSerif
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.height((31 * scale).dp))
+                        if (historyTracks.isNotEmpty()) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy((14 * scale).dp)
+                            ) {
+                                items(historyTracks.take(8)) { trk ->
+                                    Column(
+                                        modifier = Modifier
+                                            .width((140 * scale).dp)
+                                            .clickable { onTrackClick(trk, historyTracks) }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size((140 * scale).dp)
+                                                .clip(RoundedCornerShape((18 * scale).dp))
+                                                .background(Color(0xFF373737))
+                                        ) {
+                                            AsyncImage(
+                                                model = trk.thumbnail,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height((6 * scale).dp))
+                                        BasicText(
+                                            text = trk.title,
+                                            style = TextStyle(
+                                                color = Color.White,
+                                                fontSize = (17 * scale).sp,
+                                                fontWeight = FontWeight.Medium,
+                                                fontFamily = FontFamily.SansSerif
+                                            ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            BasicText(
+                                text = "Play some tracks to see them here",
+                                style = TextStyle(
+                                    color = Color(0xFF8E8E93),
+                                    fontSize = (20 * scale).sp,
+                                    fontWeight = FontWeight.Normal,
+                                    fontFamily = FontFamily.SansSerif
+                                )
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(200.dp))
+                    Spacer(modifier = Modifier.height((82 * scale).dp))
+
+                    Column(modifier = Modifier.padding(horizontal = (28 * scale).dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BasicText(
+                                text = "My Wave",
+                                style = TextStyle(
+                                    color = Color.White,
+                                    fontSize = (32 * scale).sp,
+                                    fontWeight = FontWeight.Normal,
+                                    fontFamily = FontFamily.SansSerif
+                                )
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size((185 * scale).dp, (54 * scale).dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White)
+                                    .clickable {
+                                        if (displayTracks.isNotEmpty()) {
+                                            onPlayWave(displayTracks, 0)
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    FigmaPlayActionIcon(
+                                        size = (20 * scale).dp,
+                                        tint = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.width((8 * scale).dp))
+                                    BasicText(
+                                        text = "Play wave",
+                                        style = TextStyle(
+                                            color = Color.Black,
+                                            fontSize = (21 * scale).sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.SansSerif
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height((175 * scale).dp))
+
+                        BasicText(
+                            text = "Save at least 5 tracks to tune\nMy Wave to your taste.",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TextStyle(
+                                color = Color(0xFF8E8E93),
+                                fontSize = (21 * scale).sp,
+                                lineHeight = (28 * scale).sp,
+                                fontWeight = FontWeight.Normal,
+                                fontFamily = FontFamily.SansSerif,
+                                textAlign = TextAlign.Center
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height((205 * scale).dp))
+
+                    BasicText(
+                        text = "Popular artists",
+                        modifier = Modifier.padding(horizontal = (34 * scale).dp),
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = (26 * scale).sp,
+                            fontWeight = FontWeight.Normal,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height((27 * scale).dp))
+
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = (26 * scale).dp),
+                        horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
+                    ) {
+                        items(artists) { artist ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .width((162 * scale).dp)
+                                    .clickable { onArtistClick(artist) }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size((162 * scale).dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF373737))
+                                ) {
+                                    AsyncImage(
+                                        model = artist.pictureUrl,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height((10 * scale).dp))
+                                BasicText(
+                                    text = artist.name,
+                                    style = TextStyle(
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = (20 * scale).sp,
+                                        fontWeight = FontWeight.Normal,
+                                        fontFamily = FontFamily.SansSerif,
+                                        textAlign = TextAlign.Center
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height((48 * scale).dp))
+
+                    BasicText(
+                        text = "New for you",
+                        modifier = Modifier.padding(horizontal = (26 * scale).dp),
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = (26 * scale).sp,
+                            fontWeight = FontWeight.Normal,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height((20 * scale).dp))
+
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = (26 * scale).dp),
+                        horizontalArrangement = Arrangement.spacedBy((18 * scale).dp)
+                    ) {
+                        items(displayTracks) { track ->
+                            Column(
+                                modifier = Modifier
+                                    .width((217 * scale).dp)
+                                    .clickable { onTrackClick(track, displayTracks) }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size((217 * scale).dp)
+                                        .clip(RoundedCornerShape((24 * scale).dp))
+                                        .background(Color(0xFF373737))
+                                ) {
+                                    AsyncImage(
+                                        model = track.thumbnail,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height((10 * scale).dp))
+                                BasicText(
+                                    text = track.title,
+                                    style = TextStyle(
+                                        color = Color.White,
+                                        fontSize = (20 * scale).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.SansSerif
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height((4 * scale).dp))
+                                BasicText(
+                                    text = track.artist,
+                                    style = TextStyle(
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = (20 * scale).sp,
+                                        fontWeight = FontWeight.Normal,
+                                        fontFamily = FontFamily.SansSerif
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(200.dp))
+                }
             }
         }
 
@@ -543,7 +654,12 @@ fun DiscoverScreen(
                         .size(musicCardWidth, 64.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .clickable { onOpenFullPlayer() }
+                        .clickable {
+                            if (currentTrack == null && activeTrack != null) {
+                                onTrackClick(activeTrack, displayTracks)
+                            }
+                            onOpenFullPlayer()
+                        }
                         .padding(start = 7.dp, end = 16.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -572,7 +688,7 @@ fun DiscoverScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             BasicText(
-                                text = activeTrack?.title ?: "NKBİ",
+                                text = activeTrack?.title ?: "",
                                 style = TextStyle(
                                     color = Color.White,
                                     fontSize = 15.sp,
@@ -584,7 +700,7 @@ fun DiscoverScreen(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             BasicText(
-                                text = activeTrack?.artist ?: "Güneş",
+                                text = activeTrack?.artist ?: "",
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
                                     fontSize = 13.sp,
@@ -603,7 +719,13 @@ fun DiscoverScreen(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
-                                .clickable { onPlayPauseToggle() },
+                                .clickable {
+                                    if (currentTrack == null && activeTrack != null) {
+                                        onTrackClick(activeTrack, displayTracks)
+                                    } else {
+                                        onPlayPauseToggle()
+                                    }
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             if (isPlaying) {
@@ -671,7 +793,8 @@ fun DiscoverScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .clickable { onNavigateToFavorites() },
                             contentAlignment = Alignment.Center
                         ) {
                             LucideMessageCircleHeartIcon(
@@ -683,7 +806,8 @@ fun DiscoverScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .clickable { onNavigateToLibrary() },
                             contentAlignment = Alignment.Center
                         ) {
                             LucideFolderOpenIcon(
@@ -695,7 +819,8 @@ fun DiscoverScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .clickable { onNavigateToHistory() },
                             contentAlignment = Alignment.Center
                         ) {
                             LucideClockIcon(
@@ -707,7 +832,8 @@ fun DiscoverScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .clickable { onNavigateToSettings() },
                             contentAlignment = Alignment.Center
                         ) {
                             LucideCogIcon(
