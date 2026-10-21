@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -511,7 +512,7 @@ fun DiscoverScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height((180.dp)))
+                Spacer(modifier = Modifier.height((220 * scale).dp))
             }
         }
 
@@ -523,13 +524,13 @@ fun DiscoverScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp)
+                    .height((200 * scale).dp)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color(0xFF181818).copy(alpha = 0.85f),
+                                Color(0xFF181818).copy(alpha = 0.9f),
                                 Color(0xFF181818)
                             )
                         )
@@ -539,17 +540,15 @@ fun DiscoverScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 26.dp),
+                    .padding(bottom = (36 * scale).dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .widthIn(max = 340.dp)
-                        .fillMaxWidth(0.86f)
-                        .height(56.dp)
+                        .size((446 * scale).dp, (76 * scale).dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
-                        .padding(start = 8.dp, end = 16.dp),
+                        .padding(start = (6 * scale).dp, end = (16 * scale).dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
@@ -558,41 +557,48 @@ fun DiscoverScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
+                                .size((70 * scale).dp, (68 * scale).dp)
+                                .clip(RoundedCornerShape(100.dp))
                                 .background(Color(0xFF2C2C2C)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
-                                AsyncImage(
-                                    model = activeTrack.thumbnail,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .size((53 * scale).dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF373737))
+                            ) {
+                                if (activeTrack != null && activeTrack.thumbnail.isNotBlank()) {
+                                    AsyncImage(
+                                        model = activeTrack.thumbnail,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width((14 * scale).dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             BasicText(
                                 text = activeTrack?.title ?: "NKBİ",
                                 style = TextStyle(
                                     color = Color.White,
-                                    fontSize = 14.sp,
+                                    fontSize = (20 * scale).sp,
                                     fontWeight = FontWeight.Medium,
                                     fontFamily = FontFamily.SansSerif
                                 ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.height(1.dp))
+                            Spacer(modifier = Modifier.height((2 * scale).dp))
                             BasicText(
                                 text = activeTrack?.artist ?: "Güneş",
                                 style = TextStyle(
                                     color = Color(0xFF8E8E93),
-                                    fontSize = 12.sp,
+                                    fontSize = (18 * scale).sp,
                                     fontWeight = FontWeight.Normal,
                                     fontFamily = FontFamily.SansSerif
                                 ),
@@ -601,79 +607,113 @@ fun DiscoverScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width((10 * scale).dp))
 
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size((48 * scale).dp)
                                 .clip(CircleShape)
                                 .background(Color.White),
                             contentAlignment = Alignment.Center
                         ) {
                             FigmaPlayActionIcon(
-                                size = 14.dp,
+                                size = (20 * scale).dp,
                                 tint = Color.Black
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width((16 * scale).dp))
 
                         FigmaSkipForwardActionIcon(
-                            size = 18.dp,
+                            size = (24 * scale).dp,
                             tint = Color.White
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height((12 * scale).dp))
 
                 Box(
                     modifier = Modifier
-                        .widthIn(max = 340.dp)
-                        .fillMaxWidth(0.86f)
-                        .height(56.dp)
+                        .size((470 * scale).dp, (76 * scale).dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF212121))
-                        .padding(horizontal = 8.dp),
+                        .background(Color(0xFF212121)),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(width = 48.dp, height = 36.dp)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(Color.White.copy(alpha = 0.08f)),
+                                .weight(1f)
+                                .fillMaxHeight(),
                             contentAlignment = Alignment.Center
                         ) {
-                            LucideTelescopeIcon(
-                                size = 22.dp,
-                                tint = Color.White
+                            Box(
+                                modifier = Modifier
+                                    .size(
+                                        width = (93 * scale).dp,
+                                        height = (70 * scale).dp
+                                    )
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Color.White.copy(alpha = 0.05f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                LucideTelescopeIcon(
+                                    size = (32 * scale).dp,
+                                    tint = Color.White
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LucideMessageCircleHeartIcon(
+                                size = (32 * scale).dp,
+                                tint = Color(0xFF8E8E93)
                             )
                         }
 
-                        LucideMessageCircleHeartIcon(
-                            size = 22.dp,
-                            tint = Color(0xFF8E8E93)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LucideFolderOpenIcon(
+                                size = (32 * scale).dp,
+                                tint = Color(0xFF8E8E93)
+                            )
+                        }
 
-                        LucideFolderOpenIcon(
-                            size = 22.dp,
-                            tint = Color(0xFF8E8E93)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LucideClockIcon(
+                                size = (32 * scale).dp,
+                                tint = Color(0xFF8E8E93)
+                            )
+                        }
 
-                        LucideClockIcon(
-                            size = 22.dp,
-                            tint = Color(0xFF8E8E93)
-                        )
-
-                        LucideCogIcon(
-                            size = 22.dp,
-                            tint = Color(0xFF8E8E93)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LucideCogIcon(
+                                size = (32 * scale).dp,
+                                tint = Color(0xFF8E8E93)
+                            )
+                        }
                     }
                 }
             }
