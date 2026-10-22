@@ -172,8 +172,11 @@ fun RiffNavGraph(
                 isLyricsLoading = isLyricsLoading,
                 dominantColor = customPrimaryColor,
                 onPlayPauseClick = {
-                    if (playbackManager.currentTrack.value == null && hotTracks.isNotEmpty()) {
-                        playbackManager.playTrack(hotTracks.first(), hotTracks)
+                    val track = playbackManager.currentTrack.value ?: hotTracks.firstOrNull()
+                    if (playbackManager.isPlaying.value) {
+                        playbackManager.pause()
+                    } else if (playbackManager.exoPlayer.mediaItemCount == 0 && track != null) {
+                        playbackManager.playTrack(track, hotTracks)
                     } else {
                         playbackManager.togglePlayPause()
                     }

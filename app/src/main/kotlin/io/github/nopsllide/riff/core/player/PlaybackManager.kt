@@ -35,6 +35,7 @@ class PlaybackManager(
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
     private var sleepTimerJob: Job? = null
+    private var hasRetriedFallback = false
 
     val exoPlayer: ExoPlayer by lazy {
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
@@ -58,15 +59,18 @@ class PlaybackManager(
                     override fun onPlayerError(error: PlaybackException) {
                         _isBuffering.value = false
                         _isPlaying.value = false
-                        val track = _currentTrack.value
-                        if (track != null && track.platform != "soundcloud") {
-                            scope.launch {
-                                val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
-                                if (fallbackUrl != null) {
-                                    val mediaItem = MediaItem.fromUri(fallbackUrl)
-                                    exoPlayer.setMediaItem(mediaItem)
-                                    exoPlayer.prepare()
-                                    exoPlayer.playWhenReady = true
+                        if (!hasRetriedFallback) {
+                            hasRetriedFallback = true
+                            val track = _currentTrack.value
+                            if (track != null) {
+                                scope.launch {
+                                    val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+                                    if (fallbackUrl != null) {
+                                        val mediaItem = MediaItem.fromUri(fallbackUrl)
+                                        exoPlayer.setMediaItem(mediaItem)
+                                        exoPlayer.prepare()
+                                        exoPlayer.playWhenReady = true
+                                    }
                                 }
                             }
                         }
@@ -133,21 +137,25 @@ class PlaybackManager(
 
         _currentTrack.value = track
         _isBuffering.value = true
+        hasRetriedFallback = false
 
         scope.launch {
+            val query = "${track.artist} - ${track.title}"
             val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
                 soundCloudClient.resolveStreamUrl(track.id)
-            } else if (track.platform == "youtube") {
-                val ytUrl = innertubeClient.resolveStreamUrl(track.id)
-                ytUrl ?: soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
-            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("googlevideo.com") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
+            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
                 track.url
             } else {
-                val query = "${track.artist} - ${track.title}"
-                val candidates = innertubeClient.search(query, 3)
-                val targetId = candidates.firstOrNull()?.id
-                val ytUrl = if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
-                ytUrl ?: soundCloudClient.searchAndResolve(query)
+                val scUrl = soundCloudClient.searchAndResolve(query)
+                if (scUrl != null) {
+                    scUrl
+                } else if (track.platform == "youtube") {
+                    innertubeClient.resolveStreamUrl(track.id)
+                } else {
+                    val candidates = innertubeClient.search(query, 3)
+                    val targetId = candidates.firstOrNull()?.id
+                    if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                }
             }
 
             if (streamUrl != null) {
@@ -156,15 +164,7 @@ class PlaybackManager(
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
             } else {
-                val scFallback = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
-                if (scFallback != null) {
-                    val mediaItem = MediaItem.fromUri(scFallback)
-                    exoPlayer.setMediaItem(mediaItem)
-                    exoPlayer.prepare()
-                    exoPlayer.playWhenReady = true
-                } else {
-                    _isBuffering.value = false
-                }
+                _isBuffering.value = false
             }
         }
     }
@@ -173,6 +173,13 @@ class PlaybackManager(
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
         } else {
+            if (exoPlayer.playbackState == Player.STATE_IDLE || exoPlayer.mediaItemCount == 0) {
+                val track = _currentTrack.value
+                if (track != null) {
+                    playTrack(track)
+                    return
+                }
+            }
             if (exoPlayer.playbackState == Player.STATE_ENDED) {
                 exoPlayer.seekTo(0)
             }

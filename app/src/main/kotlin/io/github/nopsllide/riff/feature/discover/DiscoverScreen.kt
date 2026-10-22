@@ -714,8 +714,11 @@ fun DiscoverScreen(
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .clickable {
-                                    if (currentTrack == null && activeTrack != null) {
-                                        onTrackClick(activeTrack, displayTracks)
+                                    val track = currentTrack ?: activeTrack
+                                    if (isPlaying) {
+                                        onPlayPauseToggle()
+                                    } else if (track != null) {
+                                        onTrackClick(track, displayTracks)
                                     } else {
                                         onPlayPauseToggle()
                                     }

@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit
 
 class InnertubeClient(
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
         .build()
 ) {
     private val json = Json { ignoreUnknownKeys = true }

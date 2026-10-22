@@ -94,7 +94,10 @@ fun FullPlayerScreen(
 
     LaunchedEffect(activeIndex) {
         if (syncedLines.isNotEmpty() && activeIndex in syncedLines.indices) {
-            lyricsListState.animateScrollToItem(activeIndex, scrollOffset = -220)
+            try {
+                lyricsListState.animateScrollToItem(activeIndex, scrollOffset = 0)
+            } catch (e: Exception) {
+            }
         }
     }
 
