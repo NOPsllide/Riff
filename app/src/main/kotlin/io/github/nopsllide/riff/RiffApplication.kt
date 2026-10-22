@@ -14,7 +14,7 @@ class RiffApplication : Application() {
     val chartsClient by lazy { ChartsClient() }
     val lyricsClient by lazy { LyricsClient() }
     val database by lazy { RiffDatabase.getInstance(this) }
-    val playbackManager by lazy { PlaybackManager(this, innertubeClient) }
+    val playbackManager by lazy { PlaybackManager(this, innertubeClient, soundCloudClient) }
 
     override fun onCreate() {
         super.onCreate()

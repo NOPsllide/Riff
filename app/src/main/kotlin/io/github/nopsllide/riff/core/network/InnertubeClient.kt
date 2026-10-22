@@ -14,6 +14,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 class InnertubeClient(
@@ -24,6 +25,14 @@ class InnertubeClient(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private val mediaTypeJson = "application/json; charset=utf-8".toMediaType()
+
+    private val pipedInstances = listOf(
+        "https://api.piped.private.coffee",
+        "https://pipedapi.ducks.party",
+        "https://pipedapi.adminforge.de",
+        "https://pipedapi.kavin.rocks",
+        "https://piped-api.lunar.icu"
+    )
 
     suspend fun search(query: String, limit: Int = 20): List<Track> = withContext(Dispatchers.IO) {
         val payload = """
@@ -36,8 +45,7 @@ class InnertubeClient(
                   "gl": "US"
                 }
               },
-              "query": ${json.encodeToString(query)},
-              "params": "EgWKAQIIAWoMEA4QChADEAQQCRAF"
+              "query": ${json.encodeToString(query)}
             }
         """.trimIndent()
 
@@ -50,19 +58,81 @@ class InnertubeClient(
             .post(payload.toRequestBody(mediaTypeJson))
             .build()
 
-        try {
+        val ytResults = try {
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext emptyList()
-                val body = response.body?.string() ?: return@withContext emptyList()
-                val root = json.parseToJsonElement(body).jsonObject
-                parseSearchResults(root).take(limit)
+                if (!response.isSuccessful) emptyList()
+                else {
+                    val body = response.body?.string() ?: ""
+                    val root = json.parseToJsonElement(body).jsonObject
+                    parseSearchResults(root).take(limit)
+                }
             }
         } catch (e: Exception) {
             emptyList()
         }
+
+        if (ytResults.isNotEmpty()) {
+            ytResults
+        } else {
+            searchPiped(query, limit)
+        }
+    }
+
+    private fun searchPiped(query: String, limit: Int): List<Track> {
+        val encoded = try {
+            URLEncoder.encode(query, "UTF-8")
+        } catch (e: Exception) {
+            query
+        }
+
+        for (base in pipedInstances) {
+            val url = "$base/search?q=$encoded&filter=music_songs"
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val body = response.body?.string() ?: return@use
+                    val root = json.parseToJsonElement(body).jsonObject
+                    val items = root["items"]?.jsonArray ?: return@use
+                    val list = mutableListOf<Track>()
+                    for (elem in items) {
+                        val obj = elem.jsonObject
+                        val urlStr = obj["url"]?.jsonPrimitive?.contentOrNull ?: ""
+                        val id = if (urlStr.startsWith("/watch?v=")) urlStr.removePrefix("/watch?v=") else urlStr
+                        if (id.length != 11) continue
+                        val title = obj["title"]?.jsonPrimitive?.contentOrNull ?: ""
+                        val uploader = obj["uploaderName"]?.jsonPrimitive?.contentOrNull ?: "Artist"
+                        val thumb = obj["thumbnail"]?.jsonPrimitive?.contentOrNull ?: ""
+                        val dur = obj["duration"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
+                        if (title.isNotBlank()) {
+                            list.add(
+                                Track(
+                                    id = id,
+                                    title = title,
+                                    artist = uploader,
+                                    duration = dur,
+                                    thumbnail = thumb,
+                                    url = "https://www.youtube.com/watch?v=$id",
+                                    platform = "youtube"
+                                )
+                            )
+                        }
+                    }
+                    if (list.isNotEmpty()) return list.take(limit)
+                }
+            } catch (e: Exception) {
+            }
+        }
+        return emptyList()
     }
 
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
+        val pipedUrl = fetchFromPiped(videoId)
+        if (pipedUrl != null) return@withContext pipedUrl
+
         val iosUrl = fetchFromClient(
             videoId = videoId,
             clientName = "IOS",
@@ -84,6 +154,52 @@ class InnertubeClient(
             userAgent = "Mozilla/5.0 (Linux; Android 12; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/34.0.0.15.39.574676104 SamsungBrowser/4.0 Chrome/122.0.6261.137 Mobile VR Safari/537.36"
         )
         vrUrl
+    }
+
+    private fun fetchFromPiped(videoId: String): String? {
+        for (base in pipedInstances) {
+            val url = "$base/streams/$videoId"
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val body = response.body?.string() ?: return@use
+                    val root = json.parseToJsonElement(body).jsonObject
+                    val audioStreams = root["audioStreams"]?.jsonArray
+                    val streamObjects = audioStreams?.mapNotNull { it.jsonObject }
+                        ?.filter {
+                            val u = it["url"]?.jsonPrimitive?.contentOrNull ?: ""
+                            u.isNotBlank()
+                        } ?: emptyList()
+                    val bestAudio = streamObjects.maxByOrNull {
+                        it["bitrate"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
+                    } ?: streamObjects.firstOrNull()
+
+                    val audioUrl = bestAudio?.get("url")?.jsonPrimitive?.contentOrNull
+                    if (!audioUrl.isNullOrBlank()) {
+                        return audioUrl
+                    }
+
+                    val videoStreams = root["videoStreams"]?.jsonArray
+                    val videoObjects = videoStreams?.mapNotNull { it.jsonObject }
+                        ?.filter {
+                            val u = it["url"]?.jsonPrimitive?.contentOrNull ?: ""
+                            val mime = it["mimeType"]?.jsonPrimitive?.contentOrNull ?: ""
+                            val fmt = it["format"]?.jsonPrimitive?.contentOrNull ?: ""
+                            u.isNotBlank() && (mime.contains("mp4", true) || fmt.contains("MP4", true))
+                        } ?: emptyList()
+                    val videoUrl = videoObjects.firstOrNull()?.get("url")?.jsonPrimitive?.contentOrNull
+                    if (!videoUrl.isNullOrBlank()) {
+                        return videoUrl
+                    }
+                }
+            } catch (e: Exception) {
+            }
+        }
+        return null
     }
 
     private fun fetchFromClient(

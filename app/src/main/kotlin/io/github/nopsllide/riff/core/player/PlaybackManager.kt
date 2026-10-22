@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.nopsllide.riff.core.model.Track
 import io.github.nopsllide.riff.core.network.InnertubeClient
+import io.github.nopsllide.riff.core.network.SoundCloudClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,6 +29,7 @@ sealed class SleepTimerMode {
 class PlaybackManager(
     private val context: Context,
     private val innertubeClient: InnertubeClient,
+    private val soundCloudClient: SoundCloudClient = SoundCloudClient(),
     val equalizerController: EqualizerController = EqualizerController()
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -56,6 +58,18 @@ class PlaybackManager(
                     override fun onPlayerError(error: PlaybackException) {
                         _isBuffering.value = false
                         _isPlaying.value = false
+                        val track = _currentTrack.value
+                        if (track != null && track.platform != "soundcloud") {
+                            scope.launch {
+                                val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+                                if (fallbackUrl != null) {
+                                    val mediaItem = MediaItem.fromUri(fallbackUrl)
+                                    exoPlayer.setMediaItem(mediaItem)
+                                    exoPlayer.prepare()
+                                    exoPlayer.playWhenReady = true
+                                }
+                            }
+                        }
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -121,15 +135,19 @@ class PlaybackManager(
         _isBuffering.value = true
 
         scope.launch {
-            val streamUrl = track.streamUrl ?: if (track.platform == "youtube") {
-                innertubeClient.resolveStreamUrl(track.id)
-            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("googlevideo.com"))) {
+            val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
+                soundCloudClient.resolveStreamUrl(track.id)
+            } else if (track.platform == "youtube") {
+                val ytUrl = innertubeClient.resolveStreamUrl(track.id)
+                ytUrl ?: soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("googlevideo.com") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
                 track.url
             } else {
                 val query = "${track.artist} - ${track.title}"
                 val candidates = innertubeClient.search(query, 3)
                 val targetId = candidates.firstOrNull()?.id
-                if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                val ytUrl = if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                ytUrl ?: soundCloudClient.searchAndResolve(query)
             }
 
             if (streamUrl != null) {
@@ -138,7 +156,15 @@ class PlaybackManager(
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true
             } else {
-                _isBuffering.value = false
+                val scFallback = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+                if (scFallback != null) {
+                    val mediaItem = MediaItem.fromUri(scFallback)
+                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+                } else {
+                    _isBuffering.value = false
+                }
             }
         }
     }
