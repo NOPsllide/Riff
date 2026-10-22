@@ -2,8 +2,11 @@ package io.github.nopsllide.riff.core.player
 
 import android.content.Context
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.nopsllide.riff.core.model.Track
 import io.github.nopsllide.riff.core.network.InnertubeClient
 import kotlinx.coroutines.CoroutineScope
@@ -32,29 +35,45 @@ class PlaybackManager(
     private var sleepTimerJob: Job? = null
 
     val exoPlayer: ExoPlayer by lazy {
-        ExoPlayer.Builder(context).build().apply {
-            addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    _isPlaying.value = isPlaying
-                    if (isPlaying) startProgressTicker() else stopProgressTicker()
-                }
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(20000)
 
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    _isBuffering.value = playbackState == Player.STATE_BUFFERING
-                    if (playbackState == Player.STATE_READY) {
-                        _durationMs.value = duration.coerceAtLeast(0L)
-                    } else if (playbackState == Player.STATE_ENDED) {
-                        if (_sleepTimer.value is SleepTimerMode.EndOfTrack) {
-                            _sleepTimer.value = SleepTimerMode.Off
-                            pause()
-                        } else {
-                            playNext()
+        val mediaSourceFactory = DefaultMediaSourceFactory(context)
+            .setDataSourceFactory(httpDataSourceFactory)
+
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build().apply {
+                addListener(object : Player.Listener {
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        _isPlaying.value = isPlaying
+                        if (isPlaying) startProgressTicker() else stopProgressTicker()
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        _isBuffering.value = false
+                        _isPlaying.value = false
+                    }
+
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        _isBuffering.value = playbackState == Player.STATE_BUFFERING
+                        if (playbackState == Player.STATE_READY) {
+                            _durationMs.value = duration.coerceAtLeast(0L)
+                        } else if (playbackState == Player.STATE_ENDED) {
+                            if (_sleepTimer.value is SleepTimerMode.EndOfTrack) {
+                                _sleepTimer.value = SleepTimerMode.Off
+                                pause()
+                            } else {
+                                playNext()
+                            }
                         }
                     }
-                }
-            })
-            equalizerController.attachPlayer(this, audioSessionId)
-        }
+                })
+                equalizerController.attachPlayer(this, audioSessionId)
+            }
     }
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
@@ -104,11 +123,12 @@ class PlaybackManager(
         scope.launch {
             val streamUrl = track.streamUrl ?: if (track.platform == "youtube") {
                 innertubeClient.resolveStreamUrl(track.id)
-            } else if (track.url.isNotBlank()) {
+            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("googlevideo.com"))) {
                 track.url
             } else {
-                val searchCandidates = innertubeClient.search("${track.artist} - ${track.title}", 1)
-                val targetId = searchCandidates.firstOrNull()?.id
+                val query = "${track.artist} - ${track.title}"
+                val candidates = innertubeClient.search(query, 3)
+                val targetId = candidates.firstOrNull()?.id
                 if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
             }
 

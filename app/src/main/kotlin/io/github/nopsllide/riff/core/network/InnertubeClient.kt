@@ -63,13 +63,47 @@ class InnertubeClient(
     }
 
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
+        val iosUrl = fetchFromClient(
+            videoId = videoId,
+            clientName = "IOS",
+            clientVersion = "19.45.4",
+            deviceModel = "iPhone16,2",
+            osName = "iOS",
+            osVersion = "18.1.0.22B83",
+            userAgent = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1 like Mac OS X; en_US)"
+        )
+        if (iosUrl != null) return@withContext iosUrl
+
+        val vrUrl = fetchFromClient(
+            videoId = videoId,
+            clientName = "ANDROID_VR",
+            clientVersion = "1.61.48",
+            deviceModel = "Quest 3",
+            osName = "Android",
+            osVersion = "12",
+            userAgent = "Mozilla/5.0 (Linux; Android 12; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/34.0.0.15.39.574676104 SamsungBrowser/4.0 Chrome/122.0.6261.137 Mobile VR Safari/537.36"
+        )
+        vrUrl
+    }
+
+    private fun fetchFromClient(
+        videoId: String,
+        clientName: String,
+        clientVersion: String,
+        deviceModel: String,
+        osName: String,
+        osVersion: String,
+        userAgent: String
+    ): String? {
         val payload = """
             {
               "context": {
                 "client": {
-                  "clientName": "ANDROID",
-                  "clientVersion": "19.09.37",
-                  "androidSdkVersion": 34,
+                  "clientName": "$clientName",
+                  "clientVersion": "$clientVersion",
+                  "deviceModel": "$deviceModel",
+                  "osName": "$osName",
+                  "osVersion": "$osVersion",
                   "hl": "en",
                   "gl": "US"
                 }
@@ -81,31 +115,29 @@ class InnertubeClient(
         val request = Request.Builder()
             .url("https://www.youtube.com/youtubei/v1/player?prettyPrint=false")
             .header("Content-Type", "application/json")
-            .header("User-Agent", "com.google.android.youtube/19.09.37 (Linux; U; Android 14)")
+            .header("User-Agent", userAgent)
             .post(payload.toRequestBody(mediaTypeJson))
             .build()
 
-        try {
+        return try {
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext null
-                val body = response.body?.string() ?: return@withContext null
+                if (!response.isSuccessful) return null
+                val body = response.body?.string() ?: return null
                 val root = json.parseToJsonElement(body).jsonObject
-                val streamingData = root["streamingData"]?.jsonObject ?: return@withContext null
-                val adaptiveFormats = streamingData["adaptiveFormats"]?.jsonArray ?: return@withContext null
+                val streamingData = root["streamingData"]?.jsonObject ?: return null
+                val adaptiveFormats = streamingData["adaptiveFormats"]?.jsonArray ?: return null
 
                 val audioFormats = adaptiveFormats.mapNotNull { it.jsonObject }
                     .filter {
                         val mime = it["mimeType"]?.jsonPrimitive?.contentOrNull ?: ""
-                        mime.startsWith("audio/")
+                        mime.startsWith("audio/") && it["url"]?.jsonPrimitive?.contentOrNull?.isNotBlank() == true
                     }
 
-                val bestOpus = audioFormats.firstOrNull {
-                    val mime = it["mimeType"]?.jsonPrimitive?.contentOrNull ?: ""
-                    mime.contains("opus") && it["url"] != null
-                }
+                val best = audioFormats.maxByOrNull {
+                    it["bitrate"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 0L
+                } ?: audioFormats.firstOrNull()
 
-                val chosen = bestOpus ?: audioFormats.firstOrNull { it["url"] != null }
-                chosen?.get("url")?.jsonPrimitive?.contentOrNull
+                best?.get("url")?.jsonPrimitive?.contentOrNull
             }
         } catch (e: Exception) {
             null
@@ -153,60 +185,24 @@ class InnertubeClient(
                     ?.get("text")?.jsonObject
                     ?.get("runs")?.jsonArray
 
-                var artist = ""
-                var album = ""
-                var durationSec = 180L
+                val artist = col1?.firstOrNull()?.jsonObject
+                    ?.get("text")?.jsonPrimitive?.contentOrNull?.trim() ?: "Unknown Artist"
 
-                val runTexts = col1?.mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.contentOrNull } ?: emptyList()
-                val segments = mutableListOf<String>()
-                var currentSegment = StringBuilder()
+                val album = if (col1 != null && col1.size > 2) {
+                    col1[2].jsonObject["text"]?.jsonPrimitive?.contentOrNull?.trim() ?: ""
+                } else ""
 
-                for (segmentPart in runTexts) {
-                    if (segmentPart == " • ") {
-                        segments.add(currentSegment.toString().trim())
-                        currentSegment = StringBuilder()
-                    } else {
-                        currentSegment.append(segmentPart)
-                    }
-                }
-                segments.add(currentSegment.toString().trim())
-                val cleanSegments = segments.filter { it.isNotBlank() && !it.equals("song", true) && !it.equals("video", true) }
-
-                if (cleanSegments.isNotEmpty()) {
-                    artist = cleanSegments[0].replace(Regex("\\s*-\\s*Topic$", RegexOption.IGNORE_CASE), "").trim()
-                }
-                if (cleanSegments.size > 1) {
-                    val last = cleanSegments.last()
-                    val dur = parseDurationString(last)
-                    if (dur > 0) {
-                        durationSec = dur
-                        if (cleanSegments.size > 2) {
-                            album = cleanSegments[1]
-                        }
-                    } else {
-                        album = cleanSegments[1]
-                    }
-                }
-
-                val thumbs = r["thumbnail"]?.jsonObject
-                    ?.get("musicThumbnailRenderer")?.jsonObject
-                    ?.get("thumbnail")?.jsonObject
-                    ?.get("thumbnails")?.jsonArray
-
-                var thumbUrl = thumbs?.lastOrNull()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
-                    ?: "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
-
-                thumbUrl = thumbUrl.replace(Regex("=w\\d+-h\\d+[^&]*$"), "=w544-h544")
+                val thumb = "https://i.ytimg.com/vi/$videoId/hqdefault.jpg"
 
                 if (title.isNotBlank()) {
                     tracks.add(
                         Track(
                             id = videoId,
                             title = title,
-                            artist = if (artist.isNotBlank()) artist else "Unknown Artist",
+                            artist = artist,
                             album = album,
-                            duration = durationSec,
-                            thumbnail = thumbUrl,
+                            duration = 0L,
+                            thumbnail = thumb,
                             url = "https://www.youtube.com/watch?v=$videoId",
                             platform = "youtube"
                         )
@@ -215,19 +211,5 @@ class InnertubeClient(
             }
         }
         return tracks
-    }
-
-    private fun parseDurationString(text: String): Long {
-        val parts = text.split(":")
-        if (parts.size !in 2..3) return 0L
-        return try {
-            var acc = 0L
-            for (p in parts) {
-                acc = acc * 60 + p.toLong()
-            }
-            acc
-        } catch (e: Exception) {
-            0L
-        }
     }
 }
