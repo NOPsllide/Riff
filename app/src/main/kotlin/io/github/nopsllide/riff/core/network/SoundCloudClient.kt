@@ -37,7 +37,14 @@ private data class ScMedia(
 @Serializable
 private data class ScTranscoding(
     val url: String? = null,
-    val duration: Long? = null
+    val duration: Long? = null,
+    val format: ScFormat? = null
+)
+
+@Serializable
+private data class ScFormat(
+    val protocol: String? = null,
+    val mime_type: String? = null
 )
 
 @Serializable
@@ -144,6 +151,15 @@ class SoundCloudClient(
         }
     }
 
+    private fun pickBestTranscoding(transcodings: List<ScTranscoding>): ScTranscoding? {
+        if (transcodings.isEmpty()) return null
+        val nonPreview = transcodings.filter { it.url?.contains("preview") == false }
+        val pool = if (nonPreview.isNotEmpty()) nonPreview else transcodings
+        return pool.firstOrNull { it.format?.protocol == "progressive" }
+            ?: pool.firstOrNull { it.format?.protocol == "hls" }
+            ?: pool.firstOrNull()
+    }
+
     suspend fun resolveStreamUrl(trackId: String): String? = withContext(Dispatchers.IO) {
         val cleanId = trackId.removePrefix("sc_")
         val cid = getValidClientId()
@@ -158,9 +174,8 @@ class SoundCloudClient(
                 val body = resp.body?.string() ?: return@withContext null
                 val parsed = json.decodeFromString<ScTrackItem>(body)
                 val transcodings = parsed.media?.transcodings ?: emptyList()
-                val full = transcodings.firstOrNull { it.url?.contains("preview") == false }
-                    ?: transcodings.firstOrNull()
-                val tUrl = full?.url ?: return@withContext null
+                val target = pickBestTranscoding(transcodings) ?: return@withContext null
+                val tUrl = target.url ?: return@withContext null
                 resolveTranscoding(tUrl, cid)
             }
         } catch (e: Exception) {
@@ -187,9 +202,8 @@ class SoundCloudClient(
                 val parsed = json.decodeFromString<ScSearchResponse>(body)
                 for (item in parsed.collection) {
                     val transcodings = item.media?.transcodings ?: emptyList()
-                    val full = transcodings.firstOrNull { it.url?.contains("preview") == false }
-                        ?: transcodings.firstOrNull()
-                    val tUrl = full?.url ?: continue
+                    val target = pickBestTranscoding(transcodings) ?: continue
+                    val tUrl = target.url ?: continue
                     val stream = resolveTranscoding(tUrl, cid)
                     if (stream != null) return@withContext stream
                 }

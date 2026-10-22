@@ -24,7 +24,7 @@ class EqualizerController {
         this.exoPlayer = player
         releaseAudioFx()
         try {
-            if (audioSessionId != 0) {
+            if (audioSessionId > 0) {
                 equalizer = Equalizer(0, audioSessionId).apply {
                     enabled = _settings.value.isEnabled
                 }
@@ -36,38 +36,40 @@ class EqualizerController {
                 }
                 applySettings(_settings.value)
             }
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
         }
     }
 
     fun applySettings(newSettings: AudioSettings) {
         _settings.value = newSettings
-
-        val player = exoPlayer
-        if (player != null) {
-            val speed = newSettings.speed.coerceIn(0.5f, 2.0f)
-            val pitchMultiplier = Math.pow(2.0, (newSettings.pitch / 12.0)).toFloat().coerceIn(0.5f, 2.0f)
-            player.playbackParameters = PlaybackParameters(speed, pitchMultiplier)
-        }
-
-        val eq = equalizer
-        if (eq != null && eq.enabled) {
-            val numBands = eq.numberOfBands.toInt()
-            val minBandLevel = eq.bandLevelRange[0]
-            val maxBandLevel = eq.bandLevelRange[1]
-
-            for (i in 0 until numBands) {
-                val centerFreq = eq.getCenterFreq(i.toShort()) / 1000
-                val targetGain = findClosestGain(centerFreq, newSettings.eqBands)
-                val millibels = (targetGain * 100).toInt().coerceIn(minBandLevel.toInt(), maxBandLevel.toInt()).toShort()
-                eq.setBandLevel(i.toShort(), millibels)
+        try {
+            val player = exoPlayer
+            if (player != null) {
+                val speed = newSettings.speed.coerceIn(0.5f, 2.0f)
+                val pitchMultiplier = Math.pow(2.0, (newSettings.pitch / 12.0)).toFloat().coerceIn(0.5f, 2.0f)
+                player.playbackParameters = PlaybackParameters(speed, pitchMultiplier)
             }
-        }
 
-        val bb = bassBoost
-        if (bb != null && bb.strengthSupported) {
-            val strength = (newSettings.bassBoost * 10).coerceIn(0, 1000).toShort()
-            bb.setStrength(strength)
+            val eq = equalizer
+            if (eq != null && eq.enabled) {
+                val numBands = eq.numberOfBands.toInt()
+                val minBandLevel = eq.bandLevelRange[0]
+                val maxBandLevel = eq.bandLevelRange[1]
+
+                for (i in 0 until numBands) {
+                    val centerFreq = eq.getCenterFreq(i.toShort()) / 1000
+                    val targetGain = findClosestGain(centerFreq, newSettings.eqBands)
+                    val millibels = (targetGain * 100).toInt().coerceIn(minBandLevel.toInt(), maxBandLevel.toInt()).toShort()
+                    eq.setBandLevel(i.toShort(), millibels)
+                }
+            }
+
+            val bb = bassBoost
+            if (bb != null && bb.strengthSupported) {
+                val strength = (newSettings.bassBoost * 10).coerceIn(0, 1000).toShort()
+                bb.setStrength(strength)
+            }
+        } catch (t: Throwable) {
         }
     }
 

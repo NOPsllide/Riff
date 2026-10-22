@@ -64,12 +64,16 @@ class PlaybackManager(
                             val track = _currentTrack.value
                             if (track != null) {
                                 scope.launch {
-                                    val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
-                                    if (fallbackUrl != null) {
-                                        val mediaItem = MediaItem.fromUri(fallbackUrl)
-                                        exoPlayer.setMediaItem(mediaItem)
-                                        exoPlayer.prepare()
-                                        exoPlayer.playWhenReady = true
+                                    try {
+                                        val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+                                        if (fallbackUrl != null) {
+                                            val mediaItem = MediaItem.fromUri(fallbackUrl)
+                                            exoPlayer.setMediaItem(mediaItem)
+                                            exoPlayer.prepare()
+                                            exoPlayer.playWhenReady = true
+                                        }
+                                    } catch (t: Throwable) {
+                                        _isBuffering.value = false
                                     }
                                 }
                             }
@@ -140,104 +144,126 @@ class PlaybackManager(
         hasRetriedFallback = false
 
         scope.launch {
-            val query = "${track.artist} - ${track.title}"
-            val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
-                soundCloudClient.resolveStreamUrl(track.id)
-            } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
-                track.url
-            } else {
-                val scUrl = soundCloudClient.searchAndResolve(query)
-                if (scUrl != null) {
-                    scUrl
-                } else if (track.platform == "youtube") {
-                    innertubeClient.resolveStreamUrl(track.id)
+            try {
+                val query = "${track.artist} - ${track.title}"
+                val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
+                    soundCloudClient.resolveStreamUrl(track.id)
+                } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
+                    track.url
                 } else {
-                    val candidates = innertubeClient.search(query, 3)
-                    val targetId = candidates.firstOrNull()?.id
-                    if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                    val scUrl = soundCloudClient.searchAndResolve(query)
+                    if (scUrl != null) {
+                        scUrl
+                    } else if (track.platform == "youtube") {
+                        innertubeClient.resolveStreamUrl(track.id)
+                    } else {
+                        val candidates = innertubeClient.search(query, 3)
+                        val targetId = candidates.firstOrNull()?.id
+                        if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                    }
                 }
-            }
 
-            if (streamUrl != null) {
-                val mediaItem = MediaItem.fromUri(streamUrl)
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.playWhenReady = true
-            } else {
+                if (streamUrl != null) {
+                    val mediaItem = MediaItem.fromUri(streamUrl)
+                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+                } else {
+                    _isBuffering.value = false
+                }
+            } catch (t: Throwable) {
                 _isBuffering.value = false
             }
         }
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-        } else {
-            if (exoPlayer.playbackState == Player.STATE_IDLE || exoPlayer.mediaItemCount == 0) {
-                val track = _currentTrack.value
-                if (track != null) {
-                    playTrack(track)
-                    return
+        try {
+            if (exoPlayer.isPlaying) {
+                exoPlayer.pause()
+            } else {
+                if (exoPlayer.playbackState == Player.STATE_IDLE || exoPlayer.mediaItemCount == 0) {
+                    val track = _currentTrack.value
+                    if (track != null) {
+                        playTrack(track)
+                        return
+                    }
                 }
+                if (exoPlayer.playbackState == Player.STATE_ENDED) {
+                    exoPlayer.seekTo(0)
+                }
+                exoPlayer.play()
             }
-            if (exoPlayer.playbackState == Player.STATE_ENDED) {
-                exoPlayer.seekTo(0)
-            }
-            exoPlayer.play()
+        } catch (t: Throwable) {
         }
     }
 
     fun pause() {
-        exoPlayer.pause()
+        try {
+            exoPlayer.pause()
+        } catch (t: Throwable) {
+        }
     }
 
     fun play() {
-        exoPlayer.play()
+        try {
+            exoPlayer.play()
+        } catch (t: Throwable) {
+        }
     }
 
     fun playNext() {
-        val q = _queue.value
-        if (q.isEmpty()) return
+        try {
+            val q = _queue.value
+            if (q.isEmpty()) return
 
-        if (_isRepeat.value) {
-            exoPlayer.seekTo(0)
-            exoPlayer.play()
-            return
-        }
+            if (_isRepeat.value) {
+                exoPlayer.seekTo(0)
+                exoPlayer.play()
+                return
+            }
 
-        val nextIndex = if (_isShuffle.value) {
-            q.indices.random()
-        } else {
-            _currentIndex.value + 1
-        }
+            val nextIndex = if (_isShuffle.value) {
+                q.indices.random()
+            } else {
+                _currentIndex.value + 1
+            }
 
-        if (nextIndex in q.indices) {
-            _currentIndex.value = nextIndex
-            playTrack(q[nextIndex])
+            if (nextIndex in q.indices) {
+                _currentIndex.value = nextIndex
+                playTrack(q[nextIndex])
+            }
+        } catch (t: Throwable) {
         }
     }
 
     fun playPrevious() {
-        if (exoPlayer.currentPosition > 3000L) {
-            exoPlayer.seekTo(0)
-            return
-        }
+        try {
+            if (exoPlayer.currentPosition > 3000L) {
+                exoPlayer.seekTo(0)
+                return
+            }
 
-        val q = _queue.value
-        if (q.isEmpty()) return
+            val q = _queue.value
+            if (q.isEmpty()) return
 
-        val prevIndex = _currentIndex.value - 1
-        if (prevIndex in q.indices) {
-            _currentIndex.value = prevIndex
-            playTrack(q[prevIndex])
-        } else {
-            exoPlayer.seekTo(0)
+            val prevIndex = _currentIndex.value - 1
+            if (prevIndex in q.indices) {
+                _currentIndex.value = prevIndex
+                playTrack(q[prevIndex])
+            } else {
+                exoPlayer.seekTo(0)
+            }
+        } catch (t: Throwable) {
         }
     }
 
     fun seekTo(positionMs: Long) {
-        _currentPositionMs.value = positionMs
-        exoPlayer.seekTo(positionMs)
+        try {
+            _currentPositionMs.value = positionMs
+            exoPlayer.seekTo(positionMs)
+        } catch (t: Throwable) {
+        }
     }
 
     fun toggleShuffle() {
