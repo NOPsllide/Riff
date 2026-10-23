@@ -155,11 +155,10 @@ class PlaybackManager(
                     if (scUrl != null) {
                         scUrl
                     } else if (track.platform == "youtube") {
-                        innertubeClient.resolveStreamUrl(track.id)
+                        innertubeClient.resolveStreamUrl(track.id) ?: soundCloudClient.searchAndResolve(query)
                     } else {
-                        val candidates = innertubeClient.search(query, 3)
-                        val targetId = candidates.firstOrNull()?.id
-                        if (targetId != null) innertubeClient.resolveStreamUrl(targetId) else null
+                        val ytUrl = innertubeClient.resolveStreamUrl(track.id)
+                        ytUrl ?: soundCloudClient.searchAndResolve(query)
                     }
                 }
 

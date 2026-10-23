@@ -5,6 +5,7 @@ import io.github.nopsllide.riff.core.database.RiffDatabase
 import io.github.nopsllide.riff.core.network.ChartsClient
 import io.github.nopsllide.riff.core.network.InnertubeClient
 import io.github.nopsllide.riff.core.network.LyricsClient
+import io.github.nopsllide.riff.core.network.RiffExtractorManager
 import io.github.nopsllide.riff.core.network.SoundCloudClient
 import io.github.nopsllide.riff.core.player.PlaybackManager
 
@@ -18,6 +19,7 @@ class RiffApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        RiffExtractorManager.init()
     }
 
     override fun onTerminate() {

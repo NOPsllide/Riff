@@ -130,6 +130,9 @@ class InnertubeClient(
     }
 
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
+        val extractorUrl = RiffExtractorManager.resolveYouTubeAudioStream(videoId)
+        if (extractorUrl != null) return@withContext extractorUrl
+
         val pipedUrl = fetchFromPiped(videoId)
         if (pipedUrl != null) return@withContext pipedUrl
 
