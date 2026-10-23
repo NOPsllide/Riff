@@ -159,6 +159,20 @@ fun FullPlayerScreen(
             ) {
                 Box(
                     modifier = Modifier
+                        .size((44 * scale).dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF222222))
+                        .clickable { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    LucideXIcon(
+                        size = (18 * scale).dp,
+                        tint = Color.White
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color.White.copy(alpha = 0.08f))
                         .padding(horizontal = (16 * scale).dp, vertical = (8 * scale).dp),
@@ -177,78 +191,10 @@ fun FullPlayerScreen(
 
                 Box(
                     modifier = Modifier
-                        .size((44 * scale).dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF222222))
-                        .clickable { onDismiss() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    LucideXIcon(
-                        size = (18 * scale).dp,
-                        tint = Color.White
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height((16 * scale).dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = (20 * scale).dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (!currentTrack?.thumbnail.isNullOrBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .size((52 * scale).dp)
-                            .clip(RoundedCornerShape((12 * scale).dp))
-                            .background(Color(0xFF242424))
-                    ) {
-                        AsyncImage(
-                            model = currentTrack?.thumbnail,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    Spacer(modifier = Modifier.width((14 * scale).dp))
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    BasicText(
-                        text = currentTrack?.title ?: "Şarkı seçilmedi",
-                        style = TextStyle(
-                            color = Color.White,
-                            fontSize = (19 * scale).sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.SansSerif
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height((2 * scale).dp))
-                    BasicText(
-                        text = currentTrack?.artist ?: "Riff",
-                        style = TextStyle(
-                            color = Color(0xFF8E8E93),
-                            fontSize = (15 * scale).sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.SansSerif
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.width((12 * scale).dp))
-
-                Box(
-                    modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
                         .background(if (showLyrics) Color.White else Color.White.copy(alpha = 0.10f))
                         .clickable { showLyrics = !showLyrics }
-                        .padding(horizontal = (14 * scale).dp, vertical = (7 * scale).dp),
+                        .padding(horizontal = (16 * scale).dp, vertical = (8 * scale).dp),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicText(
@@ -261,13 +207,6 @@ fun FullPlayerScreen(
                         )
                     )
                 }
-
-                Spacer(modifier = Modifier.width((10 * scale).dp))
-
-                LucideHeartOutlinedIcon(
-                    size = (28 * scale).dp,
-                    tint = Color(0xFF8E8E93)
-                )
             }
 
             Spacer(modifier = Modifier.height((16 * scale).dp))
@@ -418,7 +357,49 @@ fun FullPlayerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height((12 * scale).dp))
+            Spacer(modifier = Modifier.height((16 * scale).dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = (24 * scale).dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    BasicText(
+                        text = currentTrack?.title ?: "Şarkı seçilmedi",
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = (22 * scale).sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.SansSerif
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height((3 * scale).dp))
+                    BasicText(
+                        text = currentTrack?.artist ?: "Riff",
+                        style = TextStyle(
+                            color = Color(0xFF8E8E93),
+                            fontSize = (15 * scale).sp,
+                            fontWeight = FontWeight.Normal,
+                            fontFamily = FontFamily.SansSerif
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width((12 * scale).dp))
+
+                LucideHeartOutlinedIcon(
+                    size = (28 * scale).dp,
+                    tint = Color(0xFF8E8E93)
+                )
+            }
+
+            Spacer(modifier = Modifier.height((14 * scale).dp))
 
             Column(
                 modifier = Modifier
@@ -549,7 +530,7 @@ fun FullPlayerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height((18 * scale).dp))
+            Spacer(modifier = Modifier.height((40 * scale).dp))
             Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }

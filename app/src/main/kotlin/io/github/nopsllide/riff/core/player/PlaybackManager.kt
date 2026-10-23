@@ -192,6 +192,11 @@ class PlaybackManager(
         _currentTrack.value = track
         _isBuffering.value = true
         hasRetriedFallback = false
+        try {
+            exoPlayer.stop()
+            exoPlayer.clearMediaItems()
+        } catch (t: Throwable) {
+        }
         ensureServiceStarted()
 
         playJob?.cancel()
