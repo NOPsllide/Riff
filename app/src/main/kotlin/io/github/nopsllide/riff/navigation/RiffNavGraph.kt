@@ -68,9 +68,9 @@ fun RiffNavGraph(
 
     LaunchedEffect(Unit) {
         isHotLoading = true
-        val picks = app.chartsClient.getHotPicks(20)
-        hotTracks = if (picks.isNotEmpty()) picks else app.innertubeClient.search("Top Hits 2025", 15)
-        popularArtists = app.chartsClient.getPopularArtists(20)
+        val picks = app.riffApiClient.getTrending(20)
+        hotTracks = picks
+        popularArtists = app.riffApiClient.getPopularArtists(20)
         isHotLoading = false
     }
 
@@ -78,7 +78,7 @@ fun RiffNavGraph(
         val track = currentTrack
         if (track != null) {
             isLyricsLoading = true
-            currentLyrics = app.lyricsClient.getLyrics(track.title, track.artist)
+            currentLyrics = app.riffApiClient.getLyrics(track.id, track.title, track.artist)
             isLyricsLoading = false
         } else {
             currentLyrics = null
@@ -90,11 +90,7 @@ fun RiffNavGraph(
             delay(350)
             isSearchLoading = true
             try {
-                val results = if (selectedPlatform == "youtube") {
-                    app.innertubeClient.search(searchQuery, 20)
-                } else {
-                    app.soundCloudClient.search(searchQuery, 20)
-                }
+                val results = app.riffApiClient.search(searchQuery, selectedPlatform, 20)
                 searchResults = results
             } catch (t: Throwable) {
                 searchResults = emptyList()
@@ -143,9 +139,9 @@ fun RiffNavGraph(
             onRefreshWave = {
                 scope.launch {
                     isHotLoading = true
-                    val picks = app.chartsClient.getHotPicks(20)
-                    hotTracks = if (picks.isNotEmpty()) picks.shuffled() else app.innertubeClient.search("Top Hits 2025", 15)
-                    popularArtists = app.chartsClient.getPopularArtists(20)
+                    val picks = app.riffApiClient.getTrending(20)
+                    hotTracks = if (picks.isNotEmpty()) picks.shuffled() else emptyList()
+                    popularArtists = app.riffApiClient.getPopularArtists(20)
                     isHotLoading = false
                 }
             },

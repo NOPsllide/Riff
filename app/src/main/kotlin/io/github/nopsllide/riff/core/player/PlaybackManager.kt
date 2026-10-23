@@ -9,8 +9,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.nopsllide.riff.core.model.Track
-import io.github.nopsllide.riff.core.network.InnertubeClient
-import io.github.nopsllide.riff.core.network.SoundCloudClient
+import io.github.nopsllide.riff.core.network.RiffApiClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,8 +28,7 @@ sealed class SleepTimerMode {
 
 class PlaybackManager(
     private val context: Context,
-    private val innertubeClient: InnertubeClient,
-    private val soundCloudClient: SoundCloudClient = SoundCloudClient(),
+    private val riffApiClient: RiffApiClient,
     val equalizerController: EqualizerController = EqualizerController()
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
@@ -75,18 +73,16 @@ class PlaybackManager(
                                 val currentRequestId = ++playRequestId
                                 scope.launch {
                                     try {
-                                        val query = "${track.artist} - ${track.title}"
-                                        val fallbackUrl = if (track.platform == "soundcloud") {
-                                            innertubeClient.search(query, 1).firstOrNull()?.id?.let {
-                                                innertubeClient.resolveStreamUrl(it)
-                                            }
-                                        } else {
-                                            soundCloudClient.searchAndResolve(query)
-                                        }
+                                        val streamUrl = riffApiClient.getStreamUrl(
+                                            trackId = track.id,
+                                            title = track.title,
+                                            artist = track.artist,
+                                            platform = track.platform
+                                        )
                                         if (currentRequestId != playRequestId) return@launch
-                                        if (fallbackUrl != null) {
+                                        if (!streamUrl.isNullOrBlank()) {
                                             _isBuffering.value = true
-                                            val mediaItem = MediaItem.fromUri(fallbackUrl)
+                                            val mediaItem = MediaItem.fromUri(streamUrl)
                                             setMediaItem(mediaItem)
                                             prepare()
                                             playWhenReady = true
@@ -183,28 +179,16 @@ class PlaybackManager(
 
         playJob = scope.launch {
             try {
-                val query = "${track.artist} - ${track.title}"
-                val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
-                    soundCloudClient.resolveStreamUrl(track.id)
-                        ?: soundCloudClient.searchAndResolve(query)
-                        ?: innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
-                } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
-                    track.url
-                } else if (track.platform == "youtube") {
-                    val directUrl = if (track.id.length == 11 && !track.id.all { it.isDigit() }) {
-                        innertubeClient.resolveStreamUrl(track.id)
-                    } else null
-                    directUrl
-                        ?: innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
-                        ?: soundCloudClient.searchAndResolve(query)
-                } else {
-                    innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
-                        ?: soundCloudClient.searchAndResolve(query)
-                }
+                val streamUrl = track.streamUrl ?: riffApiClient.getStreamUrl(
+                    trackId = track.id,
+                    title = track.title,
+                    artist = track.artist,
+                    platform = track.platform
+                )
 
                 if (currentRequestId != playRequestId) return@launch
 
-                if (streamUrl != null) {
+                if (!streamUrl.isNullOrBlank()) {
                     val mediaItem = MediaItem.fromUri(streamUrl)
                     exoPlayer.setMediaItem(mediaItem)
                     exoPlayer.prepare()
