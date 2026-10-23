@@ -1,6 +1,7 @@
 package io.github.nopsllide.riff.core.player
 
 import android.content.Context
+import android.content.Intent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -33,6 +34,8 @@ class PlaybackManager(
     val equalizerController: EqualizerController = EqualizerController()
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private var playJob: Job? = null
+    private var playRequestId: Long = 0L
     private var progressJob: Job? = null
     private var sleepTimerJob: Job? = null
     private var hasRetriedFallback = false
@@ -56,6 +59,12 @@ class PlaybackManager(
                         if (isPlaying) startProgressTicker() else stopProgressTicker()
                     }
 
+                    override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                        if (audioSessionId > 0) {
+                            equalizerController.attachPlayer(this@apply, audioSessionId)
+                        }
+                    }
+
                     override fun onPlayerError(error: PlaybackException) {
                         _isBuffering.value = false
                         _isPlaying.value = false
@@ -63,14 +72,26 @@ class PlaybackManager(
                             hasRetriedFallback = true
                             val track = _currentTrack.value
                             if (track != null) {
+                                val currentRequestId = ++playRequestId
                                 scope.launch {
                                     try {
-                                        val fallbackUrl = soundCloudClient.searchAndResolve("${track.artist} - ${track.title}")
+                                        val query = "${track.artist} - ${track.title}"
+                                        val fallbackUrl = if (track.platform == "soundcloud") {
+                                            innertubeClient.search(query, 1).firstOrNull()?.id?.let {
+                                                innertubeClient.resolveStreamUrl(it)
+                                            }
+                                        } else {
+                                            soundCloudClient.searchAndResolve(query)
+                                        }
+                                        if (currentRequestId != playRequestId) return@launch
                                         if (fallbackUrl != null) {
+                                            _isBuffering.value = true
                                             val mediaItem = MediaItem.fromUri(fallbackUrl)
-                                            exoPlayer.setMediaItem(mediaItem)
-                                            exoPlayer.prepare()
-                                            exoPlayer.playWhenReady = true
+                                            setMediaItem(mediaItem)
+                                            prepare()
+                                            playWhenReady = true
+                                        } else {
+                                            _isBuffering.value = false
                                         }
                                     } catch (t: Throwable) {
                                         _isBuffering.value = false
@@ -84,6 +105,9 @@ class PlaybackManager(
                         _isBuffering.value = playbackState == Player.STATE_BUFFERING
                         if (playbackState == Player.STATE_READY) {
                             _durationMs.value = duration.coerceAtLeast(0L)
+                            if (audioSessionId > 0) {
+                                equalizerController.attachPlayer(this@apply, audioSessionId)
+                            }
                         } else if (playbackState == Player.STATE_ENDED) {
                             if (_sleepTimer.value is SleepTimerMode.EndOfTrack) {
                                 _sleepTimer.value = SleepTimerMode.Off
@@ -94,8 +118,18 @@ class PlaybackManager(
                         }
                     }
                 })
-                equalizerController.attachPlayer(this, audioSessionId)
+                if (audioSessionId > 0) {
+                    equalizerController.attachPlayer(this, audioSessionId)
+                }
             }
+    }
+
+    private fun ensureServiceStarted() {
+        try {
+            val intent = Intent(context, RiffPlaybackService::class.java)
+            context.startService(intent)
+        } catch (t: Throwable) {
+        }
     }
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
@@ -142,25 +176,33 @@ class PlaybackManager(
         _currentTrack.value = track
         _isBuffering.value = true
         hasRetriedFallback = false
+        ensureServiceStarted()
 
-        scope.launch {
+        playJob?.cancel()
+        val currentRequestId = ++playRequestId
+
+        playJob = scope.launch {
             try {
                 val query = "${track.artist} - ${track.title}"
                 val streamUrl = track.streamUrl ?: if (track.platform == "soundcloud") {
                     soundCloudClient.resolveStreamUrl(track.id)
+                        ?: soundCloudClient.searchAndResolve(query)
+                        ?: innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
                 } else if (track.url.isNotBlank() && (track.url.endsWith(".mp3") || track.url.endsWith(".m4a") || track.url.endsWith(".opus") || track.url.contains("sndcdn.com") || track.url.contains("soundcloud.cloud"))) {
                     track.url
+                } else if (track.platform == "youtube") {
+                    val directUrl = if (track.id.length == 11 && !track.id.all { it.isDigit() }) {
+                        innertubeClient.resolveStreamUrl(track.id)
+                    } else null
+                    directUrl
+                        ?: innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
+                        ?: soundCloudClient.searchAndResolve(query)
                 } else {
-                    val scUrl = soundCloudClient.searchAndResolve(query)
-                    if (scUrl != null) {
-                        scUrl
-                    } else if (track.platform == "youtube") {
-                        innertubeClient.resolveStreamUrl(track.id) ?: soundCloudClient.searchAndResolve(query)
-                    } else {
-                        val ytUrl = innertubeClient.resolveStreamUrl(track.id)
-                        ytUrl ?: soundCloudClient.searchAndResolve(query)
-                    }
+                    innertubeClient.search(query, 1).firstOrNull()?.id?.let { innertubeClient.resolveStreamUrl(it) }
+                        ?: soundCloudClient.searchAndResolve(query)
                 }
+
+                if (currentRequestId != playRequestId) return@launch
 
                 if (streamUrl != null) {
                     val mediaItem = MediaItem.fromUri(streamUrl)
@@ -171,7 +213,9 @@ class PlaybackManager(
                     _isBuffering.value = false
                 }
             } catch (t: Throwable) {
-                _isBuffering.value = false
+                if (currentRequestId == playRequestId) {
+                    _isBuffering.value = false
+                }
             }
         }
     }
@@ -181,7 +225,7 @@ class PlaybackManager(
             if (exoPlayer.isPlaying) {
                 exoPlayer.pause()
             } else {
-                if (exoPlayer.playbackState == Player.STATE_IDLE || exoPlayer.mediaItemCount == 0) {
+                if (exoPlayer.playbackState == Player.STATE_IDLE || exoPlayer.mediaItemCount == 0 || exoPlayer.playerError != null) {
                     val track = _currentTrack.value
                     if (track != null) {
                         playTrack(track)
@@ -191,6 +235,7 @@ class PlaybackManager(
                 if (exoPlayer.playbackState == Player.STATE_ENDED) {
                     exoPlayer.seekTo(0)
                 }
+                ensureServiceStarted()
                 exoPlayer.play()
             }
         } catch (t: Throwable) {
@@ -206,6 +251,7 @@ class PlaybackManager(
 
     fun play() {
         try {
+            ensureServiceStarted()
             exoPlayer.play()
         } catch (t: Throwable) {
         }
@@ -223,7 +269,8 @@ class PlaybackManager(
             }
 
             val nextIndex = if (_isShuffle.value) {
-                q.indices.random()
+                val candidates = q.indices.filter { it != _currentIndex.value }
+                if (candidates.isNotEmpty()) candidates.random() else _currentIndex.value
             } else {
                 _currentIndex.value + 1
             }
@@ -341,6 +388,7 @@ class PlaybackManager(
     }
 
     fun release() {
+        playJob?.cancel()
         stopProgressTicker()
         sleepTimerJob?.cancel()
         exoPlayer.release()

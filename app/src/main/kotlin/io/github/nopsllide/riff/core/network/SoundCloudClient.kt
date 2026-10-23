@@ -54,33 +54,24 @@ private data class ScUser(
 
 class SoundCloudClient(
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
         .build()
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     private var activeClientId = "mPlu6PcFn4MUnGqFmsvUDt4oEA1CeA72"
 
-    private suspend fun getValidClientId(): String = withContext(Dispatchers.IO) {
-        val current = activeClientId
-        if (isClientIdValid(current)) {
-            return@withContext current
-        }
+    private suspend fun getClientId(): String = withContext(Dispatchers.IO) {
+        activeClientId
+    }
+
+    private suspend fun refreshClientId(): String = withContext(Dispatchers.IO) {
         val fresh = fetchFreshClientId()
         if (fresh != null) {
             activeClientId = fresh
-            return@withContext fresh
-        }
-        current
-    }
-
-    private fun isClientIdValid(cid: String): Boolean {
-        val testUrl = "https://api-v2.soundcloud.com/search/tracks?q=test&client_id=$cid&limit=1"
-        val req = Request.Builder().url(testUrl).header("User-Agent", "Mozilla/5.0").build()
-        return try {
-            client.newCall(req).execute().use { it.isSuccessful }
-        } catch (e: Exception) {
-            false
+            fresh
+        } else {
+            activeClientId
         }
     }
 
@@ -114,18 +105,26 @@ class SoundCloudClient(
         } catch (e: Exception) {
             query
         }
-        val cid = getValidClientId()
-        val url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=$limit"
+        var cid = getClientId()
+        var url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=$limit"
 
-        val request = Request.Builder()
+        var request = Request.Builder()
             .url(url)
             .header("User-Agent", "Mozilla/5.0")
             .build()
 
         try {
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext emptyList()
-                val body = response.body?.string() ?: return@withContext emptyList()
+            var response = client.newCall(request).execute()
+            if (response.code == 401 || response.code == 403) {
+                response.close()
+                cid = refreshClientId()
+                url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=$limit"
+                request = Request.Builder().url(url).header("User-Agent", "Mozilla/5.0").build()
+                response = client.newCall(request).execute()
+            }
+            response.use { resp ->
+                if (!resp.isSuccessful) return@withContext emptyList()
+                val body = resp.body?.string() ?: return@withContext emptyList()
                 val parsed = json.decodeFromString<ScSearchResponse>(body)
 
                 parsed.collection.mapNotNull { item ->
@@ -162,16 +161,24 @@ class SoundCloudClient(
 
     suspend fun resolveStreamUrl(trackId: String): String? = withContext(Dispatchers.IO) {
         val cleanId = trackId.removePrefix("sc_")
-        val cid = getValidClientId()
-        val trackUrl = "https://api-v2.soundcloud.com/tracks/$cleanId?client_id=$cid"
-        val req = Request.Builder()
+        var cid = getClientId()
+        var trackUrl = "https://api-v2.soundcloud.com/tracks/$cleanId?client_id=$cid"
+        var req = Request.Builder()
             .url(trackUrl)
             .header("User-Agent", "Mozilla/5.0")
             .build()
         try {
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) return@withContext null
-                val body = resp.body?.string() ?: return@withContext null
+            var resp = client.newCall(req).execute()
+            if (resp.code == 401 || resp.code == 403) {
+                resp.close()
+                cid = refreshClientId()
+                trackUrl = "https://api-v2.soundcloud.com/tracks/$cleanId?client_id=$cid"
+                req = Request.Builder().url(trackUrl).header("User-Agent", "Mozilla/5.0").build()
+                resp = client.newCall(req).execute()
+            }
+            resp.use { r ->
+                if (!r.isSuccessful) return@withContext null
+                val body = r.body?.string() ?: return@withContext null
                 val parsed = json.decodeFromString<ScTrackItem>(body)
                 val transcodings = parsed.media?.transcodings ?: emptyList()
                 val target = pickBestTranscoding(transcodings) ?: return@withContext null
@@ -189,16 +196,24 @@ class SoundCloudClient(
         } catch (e: Exception) {
             query
         }
-        val cid = getValidClientId()
-        val url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=3"
-        val req = Request.Builder()
+        var cid = getClientId()
+        var url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=3"
+        var req = Request.Builder()
             .url(url)
             .header("User-Agent", "Mozilla/5.0")
             .build()
         try {
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) return@withContext null
-                val body = resp.body?.string() ?: return@withContext null
+            var resp = client.newCall(req).execute()
+            if (resp.code == 401 || resp.code == 403) {
+                resp.close()
+                cid = refreshClientId()
+                url = "https://api-v2.soundcloud.com/search/tracks?q=$encoded&client_id=$cid&limit=3"
+                req = Request.Builder().url(url).header("User-Agent", "Mozilla/5.0").build()
+                resp = client.newCall(req).execute()
+            }
+            resp.use { r ->
+                if (!r.isSuccessful) return@withContext null
+                val body = r.body?.string() ?: return@withContext null
                 val parsed = json.decodeFromString<ScSearchResponse>(body)
                 for (item in parsed.collection) {
                     val transcodings = item.media?.transcodings ?: emptyList()

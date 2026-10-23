@@ -3,6 +3,7 @@ package io.github.nopsllide.riff.core.network
 import io.github.nopsllide.riff.core.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -28,10 +29,7 @@ class InnertubeClient(
 
     private val pipedInstances = listOf(
         "https://api.piped.private.coffee",
-        "https://pipedapi.ducks.party",
-        "https://pipedapi.adminforge.de",
-        "https://pipedapi.kavin.rocks",
-        "https://piped-api.lunar.icu"
+        "https://pipedapi.kavin.rocks"
     )
 
     suspend fun search(query: String, limit: Int = 20): List<Track> = withContext(Dispatchers.IO) {
@@ -130,33 +128,40 @@ class InnertubeClient(
     }
 
     suspend fun resolveStreamUrl(videoId: String): String? = withContext(Dispatchers.IO) {
-        val extractorUrl = RiffExtractorManager.resolveYouTubeAudioStream(videoId)
+        val extractorUrl = try {
+            withTimeoutOrNull(6000L) {
+                RiffExtractorManager.resolveYouTubeAudioStream(videoId)
+            }
+        } catch (t: Throwable) {
+            null
+        }
         if (extractorUrl != null) return@withContext extractorUrl
 
-        val pipedUrl = fetchFromPiped(videoId)
-        if (pipedUrl != null) return@withContext pipedUrl
+        val directUrl = try {
+            withTimeoutOrNull(4000L) {
+                fetchFromClient(
+                    videoId = videoId,
+                    clientName = "IOS",
+                    clientVersion = "19.45.4",
+                    deviceModel = "iPhone16,2",
+                    osName = "iOS",
+                    osVersion = "18.1.0.22B83",
+                    userAgent = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1 like Mac OS X; en_US)"
+                )
+            }
+        } catch (t: Throwable) {
+            null
+        }
+        if (directUrl != null) return@withContext directUrl
 
-        val iosUrl = fetchFromClient(
-            videoId = videoId,
-            clientName = "IOS",
-            clientVersion = "19.45.4",
-            deviceModel = "iPhone16,2",
-            osName = "iOS",
-            osVersion = "18.1.0.22B83",
-            userAgent = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1 like Mac OS X; en_US)"
-        )
-        if (iosUrl != null) return@withContext iosUrl
-
-        val vrUrl = fetchFromClient(
-            videoId = videoId,
-            clientName = "ANDROID_VR",
-            clientVersion = "1.61.48",
-            deviceModel = "Quest 3",
-            osName = "Android",
-            osVersion = "12",
-            userAgent = "Mozilla/5.0 (Linux; Android 12; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) OculusBrowser/34.0.0.15.39.574676104 SamsungBrowser/4.0 Chrome/122.0.6261.137 Mobile VR Safari/537.36"
-        )
-        vrUrl
+        val pipedUrl = try {
+            withTimeoutOrNull(3000L) {
+                fetchFromPiped(videoId)
+            }
+        } catch (t: Throwable) {
+            null
+        }
+        pipedUrl
     }
 
     private fun fetchFromPiped(videoId: String): String? {

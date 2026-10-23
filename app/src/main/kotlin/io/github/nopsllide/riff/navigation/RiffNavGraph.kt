@@ -27,6 +27,7 @@ import io.github.nopsllide.riff.core.model.Lyrics
 import io.github.nopsllide.riff.core.model.Track
 import io.github.nopsllide.riff.feature.discover.DiscoverScreen
 import io.github.nopsllide.riff.feature.player.FullPlayerScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -86,13 +87,20 @@ fun RiffNavGraph(
 
     LaunchedEffect(searchQuery, selectedPlatform) {
         if (searchQuery.length >= 2) {
+            delay(350)
             isSearchLoading = true
-            searchResults = if (selectedPlatform == "youtube") {
-                app.innertubeClient.search(searchQuery, 20)
-            } else {
-                app.soundCloudClient.search(searchQuery, 20)
+            try {
+                val results = if (selectedPlatform == "youtube") {
+                    app.innertubeClient.search(searchQuery, 20)
+                } else {
+                    app.soundCloudClient.search(searchQuery, 20)
+                }
+                searchResults = results
+            } catch (t: Throwable) {
+                searchResults = emptyList()
+            } finally {
+                isSearchLoading = false
             }
-            isSearchLoading = false
         } else {
             searchResults = emptyList()
         }
