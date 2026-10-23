@@ -31,33 +31,49 @@ private data class StreamResponse(
 )
 
 class RiffApiClient(
-    private var primaryBaseUrl: String = "http://10.0.2.2:8080/api/v1",
-    private var fallbackBaseUrl: String = "http://127.0.0.1:8080/api/v1",
+    private var primaryBaseUrl: String = "http://127.0.0.1:8080/api/v1",
+    private var fallbackBaseUrl: String = "http://10.0.2.2:8080/api/v1",
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
+        .connectTimeout(2, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
         .build()
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    @Volatile
+    private var resolvedBaseUrl: String? = null
+
     fun setBaseUrl(url: String) {
-        primaryBaseUrl = url.trimEnd('/')
+        resolvedBaseUrl = url.trimEnd('/')
     }
 
-    fun getBaseUrl(): String = primaryBaseUrl
+    fun getBaseUrl(): String = resolvedBaseUrl ?: primaryBaseUrl
 
     private fun executeRequest(pathWithQuery: String): String? {
-        val urls = listOf(
-            "$primaryBaseUrl$pathWithQuery",
-            "$fallbackBaseUrl$pathWithQuery"
-        )
-        for (url in urls) {
+        val active = resolvedBaseUrl
+        val candidateUrls = if (active != null) {
+            listOf(active + pathWithQuery)
+        } else {
+            listOf(
+                "$primaryBaseUrl$pathWithQuery",
+                "$fallbackBaseUrl$pathWithQuery"
+            )
+        }
+
+        for (url in candidateUrls) {
             try {
                 val request = Request.Builder().url(url).build()
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
                         val body = response.body?.string()
                         if (!body.isNullOrBlank()) {
+                            if (resolvedBaseUrl == null) {
+                                val base = url.substringBefore("/charts")
+                                    .substringBefore("/search")
+                                    .substringBefore("/stream")
+                                    .substringBefore("/lyrics")
+                                resolvedBaseUrl = base
+                            }
                             return body
                         }
                     }

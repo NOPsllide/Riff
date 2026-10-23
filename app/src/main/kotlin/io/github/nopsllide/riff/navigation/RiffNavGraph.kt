@@ -85,12 +85,13 @@ fun RiffNavGraph(
         }
     }
 
-    LaunchedEffect(searchQuery, selectedPlatform) {
-        if (searchQuery.length >= 2) {
-            delay(350)
+    LaunchedEffect(searchQuery) {
+        val q = searchQuery.trim()
+        if (q.isNotEmpty()) {
+            delay(120)
             isSearchLoading = true
             try {
-                val results = app.riffApiClient.search(searchQuery, selectedPlatform, 20)
+                val results = app.riffApiClient.search(q, "all", 20)
                 searchResults = results
             } catch (t: Throwable) {
                 searchResults = emptyList()
