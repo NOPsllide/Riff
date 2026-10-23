@@ -1,5 +1,7 @@
 package io.github.nopsllide.riff.feature.player
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,8 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +84,7 @@ fun FullPlayerScreen(
     modifier: Modifier = Modifier
 ) {
     val lyricsListState = rememberLazyListState()
+    var showLyrics by remember { mutableStateOf(false) }
 
     val syncedLines = lyrics?.syncedLines ?: emptyList()
     val activeIndex = remember(currentPositionMs, syncedLines) {
@@ -92,10 +96,12 @@ fun FullPlayerScreen(
         }
     }
 
-    LaunchedEffect(activeIndex) {
-        if (syncedLines.isNotEmpty() && activeIndex in syncedLines.indices) {
+    val density = LocalDensity.current
+    LaunchedEffect(activeIndex, showLyrics) {
+        if (showLyrics && syncedLines.isNotEmpty() && activeIndex in syncedLines.indices) {
             try {
-                lyricsListState.animateScrollToItem(activeIndex, scrollOffset = 0)
+                val centerOffset = with(density) { -(130).dp.toPx().toInt() }
+                lyricsListState.animateScrollToItem(activeIndex, scrollOffset = centerOffset)
             } catch (e: Exception) {
             }
         }
@@ -111,27 +117,26 @@ fun FullPlayerScreen(
     }
 
     val displayPosition = if (isDraggingSlider) scrubbedPositionMs.toLong() else currentPositionMs
-
     val ambientColor = dominantColor ?: Color(0xFF323232)
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF181818))
+            .background(Color(0xFF141414))
     ) {
-        val scale = (maxWidth.value / 606f).coerceIn(0.55f, 1.15f)
+        val scale = (maxWidth.value / 412f).coerceIn(0.75f, 1.25f)
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height((450 * scale).dp)
+                .height((420 * scale).dp)
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            ambientColor.copy(alpha = 0.32f),
-                            ambientColor.copy(alpha = 0.14f),
-                            ambientColor.copy(alpha = 0.04f),
+                            ambientColor.copy(alpha = 0.35f),
+                            ambientColor.copy(alpha = 0.15f),
+                            ambientColor.copy(alpha = 0.03f),
                             Color.Transparent
                         )
                     )
@@ -143,28 +148,28 @@ fun FullPlayerScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            Spacer(modifier = Modifier.height((16 * scale).dp))
+            Spacer(modifier = Modifier.height((12 * scale).dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = (25 * scale).dp),
+                    .padding(horizontal = (20 * scale).dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size((165 * scale).dp, (48 * scale).dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color.White.copy(alpha = 0.05f)),
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .padding(horizontal = (16 * scale).dp, vertical = (8 * scale).dp),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicText(
-                        text = "Now playing",
+                        text = "Şimdi Çalıyor",
                         style = TextStyle(
                             color = Color.White,
-                            fontSize = (21 * scale).sp,
-                            fontWeight = FontWeight.Normal,
+                            fontSize = (15 * scale).sp,
+                            fontWeight = FontWeight.Medium,
                             fontFamily = FontFamily.SansSerif
                         )
                     )
@@ -172,46 +177,62 @@ fun FullPlayerScreen(
 
                 Box(
                     modifier = Modifier
-                        .size((54 * scale).dp)
+                        .size((44 * scale).dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF212121))
+                        .background(Color(0xFF222222))
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideXIcon(
-                        size = (20 * scale).dp,
+                        size = (18 * scale).dp,
                         tint = Color.White
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height((24 * scale).dp))
+            Spacer(modifier = Modifier.height((16 * scale).dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = (26 * scale).dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = (20 * scale).dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (!currentTrack?.thumbnail.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .size((52 * scale).dp)
+                            .clip(RoundedCornerShape((12 * scale).dp))
+                            .background(Color(0xFF242424))
+                    ) {
+                        AsyncImage(
+                            model = currentTrack?.thumbnail,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Spacer(modifier = Modifier.width((14 * scale).dp))
+                }
+
                 Column(modifier = Modifier.weight(1f)) {
                     BasicText(
                         text = currentTrack?.title ?: "Şarkı seçilmedi",
                         style = TextStyle(
                             color = Color.White,
-                            fontSize = (23 * scale).sp,
+                            fontSize = (19 * scale).sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.SansSerif
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height((4 * scale).dp))
+                    Spacer(modifier = Modifier.height((2 * scale).dp))
                     BasicText(
                         text = currentTrack?.artist ?: "Riff",
                         style = TextStyle(
                             color = Color(0xFF8E8E93),
-                            fontSize = (21 * scale).sp,
+                            fontSize = (15 * scale).sp,
                             fontWeight = FontWeight.Normal,
                             fontFamily = FontFamily.SansSerif
                         ),
@@ -220,101 +241,60 @@ fun FullPlayerScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.width((16 * scale).dp))
+                Spacer(modifier = Modifier.width((12 * scale).dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(if (showLyrics) Color.White else Color.White.copy(alpha = 0.10f))
+                        .clickable { showLyrics = !showLyrics }
+                        .padding(horizontal = (14 * scale).dp, vertical = (7 * scale).dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicText(
+                        text = "Sözler",
+                        style = TextStyle(
+                            color = if (showLyrics) Color.Black else Color.White,
+                            fontSize = (13 * scale).sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.width((10 * scale).dp))
 
                 LucideHeartOutlinedIcon(
-                    size = (34 * scale).dp,
+                    size = (28 * scale).dp,
                     tint = Color(0xFF8E8E93)
                 )
             }
 
-            Spacer(modifier = Modifier.height((20 * scale).dp))
+            Spacer(modifier = Modifier.height((16 * scale).dp))
 
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .padding(horizontal = (20 * scale).dp),
+                contentAlignment = Alignment.Center
             ) {
-                if (syncedLines.isNotEmpty()) {
-                    LazyColumn(
-                        state = lyricsListState,
-                        contentPadding = PaddingValues(
-                            start = (26 * scale).dp,
-                            end = (26 * scale).dp,
-                            top = (20 * scale).dp,
-                            bottom = (90 * scale).dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy((18 * scale).dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        itemsIndexed(syncedLines) { index, line ->
-                            val isCurrent = index == activeIndex
-                            val style = if (isCurrent) {
-                                TextStyle(
-                                    color = Color.White,
-                                    fontSize = (34 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.SansSerif,
-                                    shadow = Shadow(
-                                        color = Color.White.copy(alpha = 0.65f),
-                                        blurRadius = 24f
-                                    )
-                                )
-                            } else {
-                                TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (32 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.SansSerif
-                                )
-                            }
-
-                            BasicText(
-                                text = line.text,
-                                style = style,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSeekTo(line.timestampMs) }
-                            )
-                        }
-                    }
-                } else if (!lyrics?.plainText.isNullOrBlank()) {
-                    val plainLines = lyrics?.plainText?.lines() ?: emptyList()
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            start = (26 * scale).dp,
-                            end = (26 * scale).dp,
-                            top = (20 * scale).dp,
-                            bottom = (90 * scale).dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy((14 * scale).dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        itemsIndexed(plainLines) { _, lineText ->
-                            BasicText(
-                                text = lineText,
-                                style = TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (28 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.SansSerif
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (currentTrack != null && currentTrack.thumbnail.isNotBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .size((340 * scale).dp)
-                                    .clip(RoundedCornerShape((32 * scale).dp))
-                                    .background(Color(0xFF242424))
-                            ) {
+                Crossfade(
+                    targetState = showLyrics,
+                    animationSpec = tween(250),
+                    label = "player_center_view"
+                ) { isLyricsMode ->
+                    if (!isLyricsMode) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.92f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape((24 * scale).dp))
+                                .background(Color(0xFF222222))
+                                .clickable { showLyrics = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!currentTrack?.thumbnail.isNullOrBlank()) {
                                 AsyncImage(
                                     model = currentTrack.thumbnail,
                                     contentDescription = null,
@@ -322,42 +302,128 @@ fun FullPlayerScreen(
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
-                        } else {
-                            BasicText(
-                                text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
-                                style = TextStyle(
-                                    color = Color(0xFF8E8E93),
-                                    fontSize = (22 * scale).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.SansSerif,
-                                    textAlign = TextAlign.Center
-                                )
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            if (syncedLines.isNotEmpty()) {
+                                LazyColumn(
+                                    state = lyricsListState,
+                                    contentPadding = PaddingValues(
+                                        top = (40 * scale).dp,
+                                        bottom = (80 * scale).dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy((18 * scale).dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    itemsIndexed(syncedLines) { index, line ->
+                                        val isCurrent = index == activeIndex
+                                        val style = if (isCurrent) {
+                                            TextStyle(
+                                                color = Color.White,
+                                                fontSize = (22 * scale).sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = FontFamily.SansSerif
+                                            )
+                                        } else {
+                                            TextStyle(
+                                                color = Color.White.copy(alpha = 0.35f),
+                                                fontSize = (18 * scale).sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontFamily = FontFamily.SansSerif
+                                            )
+                                        }
+
+                                        BasicText(
+                                            text = line.text,
+                                            style = style,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onSeekTo(line.timestampMs) }
+                                                .padding(vertical = (2 * scale).dp)
+                                        )
+                                    }
+                                }
+                            } else if (!lyrics?.plainText.isNullOrBlank()) {
+                                val plainLines = lyrics?.plainText?.lines() ?: emptyList()
+                                LazyColumn(
+                                    contentPadding = PaddingValues(
+                                        top = (30 * scale).dp,
+                                        bottom = (60 * scale).dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy((14 * scale).dp),
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    itemsIndexed(plainLines) { _, lineText ->
+                                        BasicText(
+                                            text = lineText,
+                                            style = TextStyle(
+                                                color = Color.White.copy(alpha = 0.70f),
+                                                fontSize = (17 * scale).sp,
+                                                fontWeight = FontWeight.Medium,
+                                                fontFamily = FontFamily.SansSerif
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    BasicText(
+                                        text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
+                                        style = TextStyle(
+                                            color = Color(0xFF8E8E93),
+                                            fontSize = (17 * scale).sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontFamily = FontFamily.SansSerif,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .fillMaxWidth()
+                                    .height((36 * scale).dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color(0xFF141414),
+                                                Color.Transparent
+                                            )
+                                        )
+                                    )
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .height((50 * scale).dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color(0xFF141414)
+                                            )
+                                        )
+                                    )
                             )
                         }
                     }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height((110 * scale).dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0x29181818),
-                                    Color(0xFF181818).copy(alpha = 0.85f),
-                                    Color(0xFF181818)
-                                )
-                            )
-                        )
-                )
             }
+
+            Spacer(modifier = Modifier.height((12 * scale).dp))
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = (26 * scale).dp)
+                    .padding(horizontal = (20 * scale).dp)
             ) {
                 SquigglySlider(
                     value = effectiveFraction,
@@ -371,22 +437,22 @@ fun FullPlayerScreen(
                     },
                     isPlaying = isPlaying,
                     activeColor = Color.White,
-                    inactiveColor = Color.White.copy(alpha = 0.18f),
+                    inactiveColor = Color.White.copy(alpha = 0.20f),
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height((4 * scale).dp))
+
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BasicText(
                         text = formatDuration(displayPosition),
                         style = TextStyle(
-                            color = Color.White,
-                            fontSize = (16 * scale).sp,
+                            color = Color(0xFF8E8E93),
+                            fontSize = (13 * scale).sp,
                             fontWeight = FontWeight.Normal,
                             fontFamily = FontFamily.SansSerif
                         )
@@ -395,8 +461,8 @@ fun FullPlayerScreen(
                     BasicText(
                         text = formatDuration(durationMs),
                         style = TextStyle(
-                            color = Color.White,
-                            fontSize = (16 * scale).sp,
+                            color = Color(0xFF8E8E93),
+                            fontSize = (13 * scale).sp,
                             fontWeight = FontWeight.Normal,
                             fontFamily = FontFamily.SansSerif
                         )
@@ -404,23 +470,23 @@ fun FullPlayerScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height((32 * scale).dp))
+            Spacer(modifier = Modifier.height((16 * scale).dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = (26 * scale).dp),
+                    .padding(horizontal = (24 * scale).dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size((48 * scale).dp)
+                        .size((44 * scale).dp)
                         .clickable { onToggleShuffle() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideShuffleIcon(
-                        size = (26 * scale).dp,
+                        size = (22 * scale).dp,
                         tint = if (isShuffle) Color.White else Color(0xFF8E8E93)
                     )
                 }
@@ -432,14 +498,14 @@ fun FullPlayerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     LucideSkipBackIcon(
-                        size = (26 * scale).dp,
+                        size = (28 * scale).dp,
                         tint = Color.White
                     )
                 }
 
                 Box(
                     modifier = Modifier
-                        .size((88 * scale).dp, (88 * scale).dp)
+                        .size((72 * scale).dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color.White)
                         .clickable { onPlayPauseClick() },
@@ -447,12 +513,12 @@ fun FullPlayerScreen(
                 ) {
                     if (isPlaying) {
                         LucidePauseIcon(
-                            size = (26 * scale).dp,
+                            size = (24 * scale).dp,
                             tint = Color.Black
                         )
                     } else {
                         FigmaPlayActionIcon(
-                            size = (26 * scale).dp,
+                            size = (24 * scale).dp,
                             tint = Color.Black
                         )
                     }
@@ -465,25 +531,25 @@ fun FullPlayerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     LucideSkipForwardIcon(
-                        size = (26 * scale).dp,
+                        size = (28 * scale).dp,
                         tint = Color.White
                     )
                 }
 
                 Box(
                     modifier = Modifier
-                        .size((48 * scale).dp)
+                        .size((44 * scale).dp)
                         .clickable { onToggleRepeat() },
                     contentAlignment = Alignment.Center
                 ) {
                     LucideRepeatIcon(
-                        size = (26 * scale).dp,
+                        size = (22 * scale).dp,
                         tint = if (isRepeat) Color.White else Color(0xFF8E8E93)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height((56 * scale).dp))
+            Spacer(modifier = Modifier.height((18 * scale).dp))
             Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }
