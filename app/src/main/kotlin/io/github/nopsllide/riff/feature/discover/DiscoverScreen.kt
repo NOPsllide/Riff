@@ -1,7 +1,18 @@
 package io.github.nopsllide.riff.feature.discover
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -38,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -100,40 +113,72 @@ fun DiscoverScreen(
         val navWidth = (maxWidth * 0.70f).coerceIn(250.dp, 280.dp)
         val musicCardWidth = (maxWidth * 0.92f).coerceIn(340.dp, 390.dp)
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            item {
-                Spacer(modifier = Modifier.statusBarsPadding())
-                Spacer(modifier = Modifier.height((12 * scale).dp))
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.statusBarsPadding())
+            Spacer(modifier = Modifier.height((12 * scale).dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = (20 * scale).dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AudioLinesLogoIcon(
-                        size = (24 * scale).dp,
-                        tint = Color.White
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = (20 * scale).dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AudioLinesLogoIcon(
+                    size = (24 * scale).dp,
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width((8 * scale).dp))
+                BasicText(
+                    text = "Riff",
+                    style = TextStyle(
+                        color = Color.White,
+                        fontSize = (22 * scale).sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
                     )
-                    Spacer(modifier = Modifier.width((8 * scale).dp))
-                    BasicText(
-                        text = "Riff",
-                        style = TextStyle(
-                            color = Color.White,
-                            fontSize = (22 * scale).sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.SansSerif
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height((16 * scale).dp))
+                )
             }
 
-            when (selectedTab) {
-                0 -> {
+            Spacer(modifier = Modifier.height((16 * scale).dp))
+
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    val enterSlide = slideInHorizontally(
+                        initialOffsetX = { fullWidth -> if (forward) (fullWidth * 0.25f).toInt() else -(fullWidth * 0.25f).toInt() },
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    ) + fadeIn(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
+                    val exitSlide = slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> if (forward) -(fullWidth * 0.25f).toInt() else (fullWidth * 0.25f).toInt() },
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    ) + fadeOut(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
+                    enterSlide.togetherWith(exitSlide)
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                label = "tab_page_transition"
+            ) { tab ->
+                when (tab) {
+                    0 -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -440,9 +485,14 @@ fun DiscoverScreen(
                         }
                     }
                 }
+                item {
+                    Spacer(modifier = Modifier.height((180 * scale).dp))
+                }
             }
+        }
 
-            1 -> {
+        1 -> {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -612,9 +662,14 @@ fun DiscoverScreen(
                         }
                     }
                 }
+                item {
+                    Spacer(modifier = Modifier.height((180 * scale).dp))
+                }
             }
+        }
 
-            2 -> {
+        2 -> {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
                     Row(
                         modifier = Modifier
@@ -727,9 +782,14 @@ fun DiscoverScreen(
                         }
                     }
                 }
+                item {
+                    Spacer(modifier = Modifier.height((180 * scale).dp))
+                }
             }
+        }
 
-            3 -> {
+        3 -> {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
                     Row(
                         modifier = Modifier
@@ -827,13 +887,14 @@ fun DiscoverScreen(
                         }
                     }
                 }
+                item {
+                    Spacer(modifier = Modifier.height((180 * scale).dp))
+                }
             }
         }
-
-            item {
-                Spacer(modifier = Modifier.height((180 * scale).dp))
-            }
-        }
+    }
+}
+}
 
         Box(
             modifier = Modifier
@@ -967,14 +1028,33 @@ fun DiscoverScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
+                val dockTabWidth = (navWidth - 10.dp) / 4
+                val dockIndicatorOffset by animateDpAsState(
+                    targetValue = dockTabWidth * selectedTab,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "dockIndicatorOffset"
+                )
+
                 Box(
                     modifier = Modifier
                         .size(navWidth, 64.dp)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color(0xFF212121))
                         .padding(5.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.CenterStart
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = dockIndicatorOffset)
+                            .width(dockTabWidth)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(Color.White.copy(alpha = 0.12f))
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically
@@ -982,18 +1062,31 @@ fun DiscoverScreen(
                         val navTabs = listOf(0, 1, 2, 3)
                         for (tabIdx in navTabs) {
                             val isActive = selectedTab == tabIdx
+                            val tabScale by animateFloatAsState(
+                                targetValue = if (isActive) 1.10f else 1.0f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                label = "tabScale"
+                            )
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxHeight()
-                                    .clickable { selectedTab = tabIdx },
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        selectedTab = tabIdx
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(RoundedCornerShape(100.dp))
-                                        .background(if (isActive) Color.White.copy(alpha = 0.08f) else Color.Transparent),
+                                    modifier = Modifier.graphicsLayer {
+                                        scaleX = tabScale
+                                        scaleY = tabScale
+                                    },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     when (tabIdx) {

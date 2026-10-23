@@ -1,9 +1,14 @@
 package io.github.nopsllide.riff.feature.player
 
-import androidx.compose.animation.Crossfade
+import android.graphics.drawable.BitmapDrawable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -38,7 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -47,9 +55,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.palette.graphics.Palette
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import io.github.nopsllide.riff.core.designsystem.component.FigmaPlayActionIcon
-import io.github.nopsllide.riff.core.designsystem.component.LucideHeartOutlinedIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucidePauseIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideRepeatIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideShuffleIcon
@@ -59,6 +70,8 @@ import io.github.nopsllide.riff.core.designsystem.component.LucideXIcon
 import io.github.nopsllide.riff.core.designsystem.component.SquigglySlider
 import io.github.nopsllide.riff.core.model.Lyrics
 import io.github.nopsllide.riff.core.model.Track
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun FullPlayerScreen(
@@ -69,7 +82,6 @@ fun FullPlayerScreen(
     durationMs: Long,
     isShuffle: Boolean = false,
     isRepeat: Boolean = false,
-    isWavyEnabled: Boolean = true,
     isBassPulseEnabled: Boolean = false,
     lyrics: Lyrics? = null,
     isLyricsLoading: Boolean = false,
@@ -83,6 +95,45 @@ fun FullPlayerScreen(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var extractedDominantColor by remember { mutableStateOf<Color?>(null) }
+
+    LaunchedEffect(currentTrack?.thumbnail) {
+        val thumb = currentTrack?.thumbnail
+        if (!thumb.isNullOrBlank()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val loader = ImageLoader(context)
+                    val req = ImageRequest.Builder(context)
+                        .data(thumb)
+                        .allowHardware(false)
+                        .size(128, 128)
+                        .build()
+                    val result = (loader.execute(req) as? SuccessResult)?.drawable
+                    val bitmap = (result as? BitmapDrawable)?.bitmap
+                    if (bitmap != null) {
+                        val palette = Palette.from(bitmap).generate()
+                        val swatch = palette.dominantSwatch
+                            ?: palette.vibrantSwatch
+                            ?: palette.mutedSwatch
+                        if (swatch != null) {
+                            extractedDominantColor = Color(swatch.rgb)
+                        }
+                    }
+                } catch (t: Throwable) {
+                }
+            }
+        } else {
+            extractedDominantColor = null
+        }
+    }
+
+    val activeAmbientColor by animateColorAsState(
+        targetValue = extractedDominantColor ?: dominantColor ?: Color(0xFF222428),
+        animationSpec = tween(durationMillis = 600),
+        label = "ambientColor"
+    )
+
     val lyricsListState = rememberLazyListState()
     var showLyrics by remember { mutableStateOf(false) }
 
@@ -117,26 +168,45 @@ fun FullPlayerScreen(
     }
 
     val displayPosition = if (isDraggingSlider) scrubbedPositionMs.toLong() else currentPositionMs
-    val ambientColor = dominantColor ?: Color(0xFF323232)
+    val interactionSource = remember { MutableInteractionSource() }
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF141414))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {}
+            )
+            .background(Color(0xFF0C0C0E))
     ) {
         val scale = (maxWidth.value / 412f).coerceIn(0.75f, 1.25f)
 
         Box(
             modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            activeAmbientColor.copy(alpha = 0.50f),
+                            activeAmbientColor.copy(alpha = 0.20f),
+                            Color(0xFF0F0F12),
+                            Color(0xFF08080A)
+                        )
+                    )
+                )
+        )
+
+        Box(
+            modifier = Modifier
                 .fillMaxWidth()
-                .height((420 * scale).dp)
+                .height((440 * scale).dp)
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            ambientColor.copy(alpha = 0.35f),
-                            ambientColor.copy(alpha = 0.15f),
-                            ambientColor.copy(alpha = 0.03f),
+                            activeAmbientColor.copy(alpha = 0.40f),
+                            activeAmbientColor.copy(alpha = 0.12f),
                             Color.Transparent
                         )
                     )
@@ -150,18 +220,18 @@ fun FullPlayerScreen(
         ) {
             Spacer(modifier = Modifier.height((12 * scale).dp))
 
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = (20 * scale).dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
+                        .align(Alignment.CenterStart)
                         .size((44 * scale).dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF222222))
+                        .background(Color.White.copy(alpha = 0.08f))
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -173,6 +243,7 @@ fun FullPlayerScreen(
 
                 Box(
                     modifier = Modifier
+                        .align(Alignment.Center)
                         .clip(RoundedCornerShape(100.dp))
                         .background(Color.White.copy(alpha = 0.08f))
                         .padding(horizontal = (16 * scale).dp, vertical = (8 * scale).dp),
@@ -191,6 +262,7 @@ fun FullPlayerScreen(
 
                 Box(
                     modifier = Modifier
+                        .align(Alignment.CenterEnd)
                         .clip(RoundedCornerShape(100.dp))
                         .background(if (showLyrics) Color.White else Color.White.copy(alpha = 0.10f))
                         .clickable { showLyrics = !showLyrics }
@@ -218,141 +290,174 @@ fun FullPlayerScreen(
                     .padding(horizontal = (20 * scale).dp),
                 contentAlignment = Alignment.Center
             ) {
-                Crossfade(
-                    targetState = showLyrics,
-                    animationSpec = tween(250),
-                    label = "player_center_view"
-                ) { isLyricsMode ->
-                    if (!isLyricsMode) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.92f)
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape((24 * scale).dp))
-                                .background(Color(0xFF222222))
-                                .clickable { showLyrics = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (!currentTrack?.thumbnail.isNullOrBlank()) {
-                                AsyncImage(
-                                    model = currentTrack?.thumbnail,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                val coverAlpha by animateFloatAsState(
+                    targetValue = if (!showLyrics) 1f else 0f,
+                    animationSpec = tween(durationMillis = 280),
+                    label = "coverAlpha"
+                )
+                val lyricsAlpha by animateFloatAsState(
+                    targetValue = if (showLyrics) 1f else 0f,
+                    animationSpec = tween(durationMillis = 280),
+                    label = "lyricsAlpha"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .aspectRatio(1f)
+                        .align(Alignment.Center)
+                        .graphicsLayer {
+                            alpha = coverAlpha
+                        }
+                        .clip(RoundedCornerShape((24 * scale).dp))
+                        .background(Color(0xFF1E1E1E))
+                        .clickable(enabled = !showLyrics) { showLyrics = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!currentTrack?.thumbnail.isNullOrBlank()) {
+                        AsyncImage(
+                            model = currentTrack?.thumbnail,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+
+                if (showLyrics || lyricsAlpha > 0.01f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .align(Alignment.Center)
+                            .graphicsLayer {
+                                alpha = lyricsAlpha
+                            }
+                    ) {
+                        if (syncedLines.isNotEmpty()) {
+                            LazyColumn(
+                                state = lyricsListState,
+                                contentPadding = PaddingValues(
+                                    top = (50 * scale).dp,
+                                    bottom = (100 * scale).dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy((18 * scale).dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                itemsIndexed(syncedLines) { index, line ->
+                                    val isCurrent = index == activeIndex
+                                    val lineAlpha by animateFloatAsState(
+                                        targetValue = if (isCurrent) 1f else 0.32f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioNoBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        ),
+                                        label = "lineAlpha"
+                                    )
+                                    val lineScale by animateFloatAsState(
+                                        targetValue = if (isCurrent) 1.05f else 0.96f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        ),
+                                        label = "lineScale"
+                                    )
+
+                                    BasicText(
+                                        text = line.text,
+                                        style = TextStyle(
+                                            color = Color.White,
+                                            fontSize = (22 * scale).sp,
+                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
+                                            fontFamily = FontFamily.SansSerif
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .graphicsLayer {
+                                                alpha = lineAlpha
+                                                scaleX = lineScale
+                                                scaleY = lineScale
+                                                transformOrigin = TransformOrigin(0f, 0.5f)
+                                            }
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null
+                                            ) {
+                                                onSeekTo(line.timestampMs)
+                                            }
+                                            .padding(vertical = (4 * scale).dp)
+                                    )
+                                }
+                            }
+                        } else if (!lyrics?.plainText.isNullOrBlank()) {
+                            val plainLines = lyrics?.plainText?.lines() ?: emptyList()
+                            LazyColumn(
+                                contentPadding = PaddingValues(
+                                    top = (30 * scale).dp,
+                                    bottom = (60 * scale).dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy((14 * scale).dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                itemsIndexed(plainLines) { _, lineText ->
+                                    BasicText(
+                                        text = lineText,
+                                        style = TextStyle(
+                                            color = Color.White.copy(alpha = 0.70f),
+                                            fontSize = (17 * scale).sp,
+                                            fontWeight = FontWeight.Medium,
+                                            fontFamily = FontFamily.SansSerif
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicText(
+                                    text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
+                                    style = TextStyle(
+                                        color = Color(0xFF8E8E93),
+                                        fontSize = (17 * scale).sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontFamily = FontFamily.SansSerif,
+                                        textAlign = TextAlign.Center
+                                    )
                                 )
                             }
                         }
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            if (syncedLines.isNotEmpty()) {
-                                LazyColumn(
-                                    state = lyricsListState,
-                                    contentPadding = PaddingValues(
-                                        top = (40 * scale).dp,
-                                        bottom = (80 * scale).dp
-                                    ),
-                                    verticalArrangement = Arrangement.spacedBy((18 * scale).dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    itemsIndexed(syncedLines) { index, line ->
-                                        val isCurrent = index == activeIndex
-                                        val style = if (isCurrent) {
-                                            TextStyle(
-                                                color = Color.White,
-                                                fontSize = (22 * scale).sp,
-                                                fontWeight = FontWeight.Bold,
-                                                fontFamily = FontFamily.SansSerif
-                                            )
-                                        } else {
-                                            TextStyle(
-                                                color = Color.White.copy(alpha = 0.35f),
-                                                fontSize = (18 * scale).sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontFamily = FontFamily.SansSerif
-                                            )
-                                        }
 
-                                        BasicText(
-                                            text = line.text,
-                                            style = style,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable { onSeekTo(line.timestampMs) }
-                                                .padding(vertical = (2 * scale).dp)
-                                        )
-                                    }
-                                }
-                            } else if (!lyrics?.plainText.isNullOrBlank()) {
-                                val plainLines = lyrics?.plainText?.lines() ?: emptyList()
-                                LazyColumn(
-                                    contentPadding = PaddingValues(
-                                        top = (30 * scale).dp,
-                                        bottom = (60 * scale).dp
-                                    ),
-                                    verticalArrangement = Arrangement.spacedBy((14 * scale).dp),
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    itemsIndexed(plainLines) { _, lineText ->
-                                        BasicText(
-                                            text = lineText,
-                                            style = TextStyle(
-                                                color = Color.White.copy(alpha = 0.70f),
-                                                fontSize = (17 * scale).sp,
-                                                fontWeight = FontWeight.Medium,
-                                                fontFamily = FontFamily.SansSerif
-                                            ),
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-                                }
-                            } else {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    BasicText(
-                                        text = if (isLyricsLoading) "Şarkı sözleri yükleniyor..." else "Şarkı sözleri bulunamadı",
-                                        style = TextStyle(
-                                            color = Color(0xFF8E8E93),
-                                            fontSize = (17 * scale).sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = FontFamily.SansSerif,
-                                            textAlign = TextAlign.Center
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .height((48 * scale).dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color(0xFF0C0C0E),
+                                            Color.Transparent
                                         )
                                     )
-                                }
-                            }
+                                )
+                        )
 
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .fillMaxWidth()
-                                    .height((36 * scale).dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color(0xFF141414),
-                                                Color.Transparent
-                                            )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .height((60 * scale).dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color(0xFF0C0C0E)
                                         )
                                     )
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth()
-                                    .height((50 * scale).dp)
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(
-                                                Color.Transparent,
-                                                Color(0xFF141414)
-                                            )
-                                        )
-                                    )
-                            )
-                        }
+                                )
+                        )
                     }
                 }
             }
@@ -365,7 +470,7 @@ fun FullPlayerScreen(
                     .padding(horizontal = (24 * scale).dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     BasicText(
                         text = currentTrack?.title ?: "Şarkı seçilmedi",
                         style = TextStyle(
@@ -390,13 +495,6 @@ fun FullPlayerScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-
-                Spacer(modifier = Modifier.width((12 * scale).dp))
-
-                LucideHeartOutlinedIcon(
-                    size = (28 * scale).dp,
-                    tint = Color(0xFF8E8E93)
-                )
             }
 
             Spacer(modifier = Modifier.height((14 * scale).dp))

@@ -1,7 +1,8 @@
 package io.github.nopsllide.riff.core.designsystem.component
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -38,7 +39,7 @@ fun SquigglySlider(
     modifier: Modifier = Modifier,
     isPlaying: Boolean = false,
     activeColor: Color = Color.White,
-    inactiveColor: Color = Color.White.copy(alpha = 0.2f),
+    inactiveColor: Color = Color.White.copy(alpha = 0.20f),
     isWavy: Boolean = true
 ) {
     var isDragging by remember { mutableStateOf(false) }
@@ -47,7 +48,10 @@ fun SquigglySlider(
 
     val knobAnim by animateFloatAsState(
         targetValue = if (isDragging) 1f else 0f,
-        animationSpec = tween(durationMillis = 150),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
         label = "knobAnim"
     )
 
@@ -69,13 +73,16 @@ fun SquigglySlider(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp)
+            .height(48.dp)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = { offset ->
                         val w = size.width
                         if (w > 0) {
-                            val target = (offset.x / w).coerceIn(0f, 1f)
+                            val padLeft = 8.dp.toPx()
+                            val padRight = 8.dp.toPx()
+                            val trackW = (w - padLeft - padRight).coerceAtLeast(1f)
+                            val target = ((offset.x - padLeft) / trackW).coerceIn(0f, 1f)
                             onValueChange(target)
                             onValueChangeFinished()
                         }
@@ -88,7 +95,10 @@ fun SquigglySlider(
                         isDragging = true
                         val w = size.width
                         if (w > 0) {
-                            dragProgress = (offset.x / w).coerceIn(0f, 1f)
+                            val padLeft = 8.dp.toPx()
+                            val padRight = 8.dp.toPx()
+                            val trackW = (w - padLeft - padRight).coerceAtLeast(1f)
+                            dragProgress = ((offset.x - padLeft) / trackW).coerceIn(0f, 1f)
                             onValueChange(dragProgress)
                         }
                     },
@@ -103,7 +113,10 @@ fun SquigglySlider(
                         change.consume()
                         val w = size.width
                         if (w > 0) {
-                            dragProgress = (change.position.x / w).coerceIn(0f, 1f)
+                            val padLeft = 8.dp.toPx()
+                            val padRight = 8.dp.toPx()
+                            val trackW = (w - padLeft - padRight).coerceAtLeast(1f)
+                            dragProgress = ((change.position.x - padLeft) / trackW).coerceIn(0f, 1f)
                             scrubPhase += (change.position.x - change.previousPosition.x) * ((2f * PI.toFloat()) / 42f)
                             onValueChange(dragProgress)
                         }
@@ -120,18 +133,18 @@ fun SquigglySlider(
             val padRight = 8.dp.toPx()
             val trackWidth = width - padLeft - padRight
 
-            val knobW = (7.5f + (9.0f - 7.5f) * knobAnim).dp.toPx()
-            val knobH = (24f + (32f - 24f) * knobAnim).dp.toPx()
-            val knobR = (3.75f + (4.5f - 3.75f) * knobAnim).dp.toPx()
+            val knobW = (5f + 3f * knobAnim).dp.toPx()
+            val knobH = (22f + 8f * knobAnim).dp.toPx()
+            val knobR = (knobW / 2f)
 
             val knobCenterX = padLeft + displayProgress * trackWidth
             val knobLeft = knobCenterX - knobW / 2f
             val knobRight = knobCenterX + knobW / 2f
 
             val waveStart = padLeft
-            val waveEnd = (knobLeft - 4.dp.toPx()).coerceAtLeast(waveStart)
+            val waveEnd = (knobLeft - 3.dp.toPx()).coerceAtLeast(waveStart)
 
-            val inactiveStart = (knobRight + 4.dp.toPx()).coerceAtMost(width - padRight)
+            val inactiveStart = (knobRight + 3.dp.toPx()).coerceAtMost(width - padRight)
             val inactiveEnd = width - padRight
 
             if (inactiveEnd > inactiveStart) {
@@ -139,28 +152,33 @@ fun SquigglySlider(
                     color = inactiveColor,
                     start = Offset(inactiveStart, centerY),
                     end = Offset(inactiveEnd, centerY),
-                    strokeWidth = 10.dp.toPx(),
+                    strokeWidth = 6.dp.toPx(),
                     cap = StrokeCap.Round
+                )
+                drawCircle(
+                    color = inactiveColor,
+                    radius = 2.dp.toPx(),
+                    center = Offset(inactiveEnd, centerY)
                 )
             }
 
             if (waveEnd > waveStart) {
                 val wavePath = Path()
-                if (!isWavy) {
+                if (!isWavy || !isPlaying) {
                     wavePath.moveTo(waveStart, centerY)
                     wavePath.lineTo(waveEnd, centerY)
                 } else {
-                    val k = (2f * PI.toFloat()) / 42f
+                    val k = (2f * PI.toFloat()) / 38f
                     val step = 2f
                     var x = waveStart
                     wavePath.moveTo(waveStart, centerY)
                     while (x <= waveEnd) {
                         val angle = scrubPhase - (waveEnd - x) * k
-                        val y = centerY + sin(angle) * 5.dp.toPx()
+                        val y = centerY + sin(angle) * 4.dp.toPx()
                         wavePath.lineTo(x, y)
                         x += step
                     }
-                    val finalY = centerY + sin(scrubPhase) * 5.dp.toPx()
+                    val finalY = centerY + sin(scrubPhase) * 4.dp.toPx()
                     wavePath.lineTo(waveEnd, finalY)
                 }
 
@@ -168,7 +186,7 @@ fun SquigglySlider(
                     path = wavePath,
                     color = activeColor,
                     style = Stroke(
-                        width = 8.5f.dp.toPx(),
+                        width = 6.dp.toPx(),
                         cap = StrokeCap.Round,
                         join = StrokeJoin.Round
                     )

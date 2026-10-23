@@ -21,6 +21,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 
 sealed class SleepTimerMode {
     object Off : SleepTimerMode()
@@ -190,14 +194,27 @@ class PlaybackManager(
         }
 
         _currentTrack.value = track
+        _currentPositionMs.value = 0L
+        _durationMs.value = track.duration.coerceAtLeast(0L)
         _isBuffering.value = true
         hasRetriedFallback = false
         try {
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
+            exoPlayer.seekTo(0L)
         } catch (t: Throwable) {
         }
         ensureServiceStarted()
+
+        scope.launch {
+            val thumb = track.thumbnail
+            if (thumb.isNullOrBlank() || thumb.contains("ytimg") || thumb.contains("default.jpg")) {
+                val officialCover = resolveOriginalArtwork(track)
+                if (!officialCover.isNullOrBlank() && _currentTrack.value?.id == track.id) {
+                    _currentTrack.value = _currentTrack.value?.copy(thumbnail = officialCover)
+                }
+            }
+        }
 
         playJob?.cancel()
         val currentRequestId = ++playRequestId
@@ -401,6 +418,30 @@ class PlaybackManager(
     private fun stopProgressTicker() {
         progressJob?.cancel()
         _currentPositionMs.value = exoPlayer.currentPosition
+    }
+
+    private suspend fun resolveOriginalArtwork(track: Track): String? = withContext(Dispatchers.IO) {
+        try {
+            val cleanTitle = track.title
+                .replace(Regex("(?i)\\((official|music|video|audio|lyrics|hd|4k)[^)]*\\)"), "")
+                .replace(Regex("(?i)\\[(official|music|video|audio|lyrics|hd|4k)[^\\]]*\\]"), "")
+                .trim()
+            val query = URLEncoder.encode("${track.artist} $cleanTitle", "UTF-8")
+            val url = URL("https://itunes.apple.com/search?term=$query&media=music&entity=song&limit=1")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            conn.requestMethod = "GET"
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                val match = Regex("\"artworkUrl100\"\\s*:\\s*\"([^\"]+)\"").find(resp)
+                if (match != null) {
+                    return@withContext match.groupValues[1].replace("100x100bb", "600x600bb")
+                }
+            }
+        } catch (t: Throwable) {
+        }
+        null
     }
 
     fun release() {
