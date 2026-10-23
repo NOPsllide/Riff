@@ -195,7 +195,7 @@ fun RiffNavGraph(
             ) + fadeOut(animationSpec = tween(durationMillis = 220))
         ) {
             FullPlayerScreen(
-                currentTrack = currentTrack ?: hotTracks.firstOrNull(),
+                currentTrack = currentTrack,
                 isPlaying = isPlaying,
                 isBuffering = isBuffering,
                 currentPositionMs = currentPositionMs,

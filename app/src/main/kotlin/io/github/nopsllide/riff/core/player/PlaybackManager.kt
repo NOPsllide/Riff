@@ -51,7 +51,7 @@ class PlaybackManager(
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                250,
+                1500,
                 20000,
                 250,
                 500

@@ -87,7 +87,6 @@ fun DiscoverScreen(
 ) {
     val displayTracks = hotTracks
     val artists = popularArtists
-    val activeTrack = currentTrack ?: displayTracks.firstOrNull()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedGenre by remember { mutableStateOf("Tümü") }
@@ -98,6 +97,8 @@ fun DiscoverScreen(
             .background(Color(0xFF121212))
     ) {
         val scale = (maxWidth.value / 412f).coerceIn(0.75f, 1.25f)
+        val navWidth = (maxWidth * 0.70f).coerceIn(250.dp, 280.dp)
+        val musicCardWidth = (maxWidth * 0.92f).coerceIn(340.dp, 390.dp)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize()
@@ -862,20 +863,16 @@ fun DiscoverScreen(
                     .padding(bottom = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (activeTrack != null) {
+                if (currentTrack != null) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .height(60.dp)
+                            .size(musicCardWidth, 64.dp)
                             .clip(RoundedCornerShape(100.dp))
-                            .background(Color(0xFF202020))
+                            .background(Color(0xFF212121))
                             .clickable {
-                                if (currentTrack == null) {
-                                    onTrackClick(activeTrack, displayTracks)
-                                }
                                 onOpenFullPlayer()
                             }
-                            .padding(start = 6.dp, end = 16.dp),
+                            .padding(start = 7.dp, end = 16.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(
@@ -889,9 +886,9 @@ fun DiscoverScreen(
                                     .background(Color(0xFF2C2C2C)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (activeTrack.thumbnail.isNotBlank()) {
+                                if (currentTrack.thumbnail.isNotBlank()) {
                                     AsyncImage(
-                                        model = activeTrack.thumbnail,
+                                        model = currentTrack.thumbnail,
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()
@@ -903,7 +900,7 @@ fun DiscoverScreen(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 BasicText(
-                                    text = activeTrack.title,
+                                    text = currentTrack.title,
                                     style = TextStyle(
                                         color = Color.White,
                                         fontSize = 14.sp,
@@ -915,7 +912,7 @@ fun DiscoverScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 BasicText(
-                                    text = activeTrack.artist,
+                                    text = currentTrack.artist,
                                     style = TextStyle(
                                         color = Color(0xFF8E8E93),
                                         fontSize = 12.sp,
@@ -935,12 +932,7 @@ fun DiscoverScreen(
                                     .clip(CircleShape)
                                     .background(Color.White)
                                     .clickable {
-                                        val track = currentTrack ?: activeTrack
-                                        if (isPlaying) {
-                                            onPlayPauseToggle()
-                                        } else {
-                                            onTrackClick(track, displayTracks)
-                                        }
+                                        onPlayPauseToggle()
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -977,11 +969,10 @@ fun DiscoverScreen(
 
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.92f)
-                        .height(58.dp)
+                        .size(navWidth, 64.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color(0xFF202020))
-                        .padding(horizontal = 6.dp),
+                        .background(Color(0xFF212121))
+                        .padding(5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -1000,26 +991,26 @@ fun DiscoverScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isActive) Color.White.copy(alpha = 0.12f) else Color.Transparent),
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(if (isActive) Color.White.copy(alpha = 0.08f) else Color.Transparent),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     when (tabIdx) {
                                         0 -> AudioLinesLogoIcon(
-                                            size = 22.dp,
+                                            size = 26.dp,
                                             tint = if (isActive) Color.White else Color(0xFF8E8E93)
                                         )
                                         1 -> LucideSearchIcon(
-                                            size = 22.dp,
+                                            size = 26.dp,
                                             tint = if (isActive) Color.White else Color(0xFF8E8E93)
                                         )
                                         2 -> LucideFolderOpenIcon(
-                                            size = 22.dp,
+                                            size = 26.dp,
                                             tint = if (isActive) Color.White else Color(0xFF8E8E93)
                                         )
                                         3 -> LucideClockIcon(
-                                            size = 22.dp,
+                                            size = 26.dp,
                                             tint = if (isActive) Color.White else Color(0xFF8E8E93)
                                         )
                                     }
