@@ -296,7 +296,7 @@ fun FullPlayerScreen(
                         ) {
                             if (!currentTrack?.thumbnail.isNullOrBlank()) {
                                 AsyncImage(
-                                    model = currentTrack.thumbnail,
+                                    model = currentTrack?.thumbnail,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
