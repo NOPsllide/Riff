@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import io.github.nopsllide.riff.RiffApplication
+import io.github.nopsllide.riff.core.database.TrackEntity
 import io.github.nopsllide.riff.core.model.Artist
 import io.github.nopsllide.riff.core.model.Lyrics
 import io.github.nopsllide.riff.core.model.Track
@@ -38,6 +39,11 @@ fun RiffNavGraph(
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
+    val trackDao = remember { app.database.trackDao() }
+    val historyEntities by trackDao.getHistory().collectAsState(initial = emptyList())
+    val favoriteEntities by trackDao.getFavorites().collectAsState(initial = emptyList())
+    val historyTracks = remember(historyEntities) { historyEntities.map { it.toTrack() } }
+    val favoriteTracks = remember(favoriteEntities) { favoriteEntities.map { it.toTrack() } }
 
     val playbackManager = app.playbackManager
     val currentTrack by playbackManager.currentTrack.collectAsState()
@@ -104,6 +110,12 @@ fun RiffNavGraph(
     }
 
     fun onTrackPlay(track: Track, newQueue: List<Track>) {
+        scope.launch {
+            try {
+                trackDao.insertOrUpdate(TrackEntity.fromTrack(track, isHistory = true))
+            } catch (t: Throwable) {
+            }
+        }
         playbackManager.playTrack(track, newQueue)
     }
 
@@ -115,7 +127,8 @@ fun RiffNavGraph(
         DiscoverScreen(
             hotTracks = hotTracks,
             popularArtists = popularArtists,
-            historyTracks = emptyList(),
+            historyTracks = historyTracks,
+            favoriteTracks = favoriteTracks,
             isLoading = isHotLoading,
             currentTrack = currentTrack,
             isPlaying = isPlaying,
@@ -136,7 +149,23 @@ fun RiffNavGraph(
             isSearchLoading = isSearchLoading,
             onTrackClick = { t, q -> onTrackPlay(t, q) },
             onArtistClick = { artist -> searchQuery = artist.name },
-            onFavoriteToggle = {},
+            onFavoriteToggle = { track ->
+                scope.launch {
+                    try {
+                        val isFav = favoriteTracks.any { it.id == track.id }
+                        trackDao.insertOrUpdate(TrackEntity.fromTrack(track, isFavorite = !isFav))
+                    } catch (t: Throwable) {
+                    }
+                }
+            },
+            onClearHistory = {
+                scope.launch {
+                    try {
+                        trackDao.clearHistory()
+                    } catch (t: Throwable) {
+                    }
+                }
+            },
             onRefreshWave = {
                 scope.launch {
                     isHotLoading = true
