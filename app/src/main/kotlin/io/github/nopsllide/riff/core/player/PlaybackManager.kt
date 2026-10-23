@@ -3,6 +3,7 @@ package io.github.nopsllide.riff.core.player
 import android.content.Context
 import android.content.Intent
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -94,7 +95,14 @@ class PlaybackManager(
                                         if (currentRequestId != playRequestId) return@launch
                                         if (!streamUrl.isNullOrBlank()) {
                                             _isBuffering.value = true
-                                            val mediaItem = MediaItem.fromUri(streamUrl)
+                                            val mediaItem = if (streamUrl.contains(".m3u8") || streamUrl.contains("soundcloud") || streamUrl.contains("mpegurl", ignoreCase = true)) {
+                                                MediaItem.Builder()
+                                                    .setUri(streamUrl)
+                                                    .setMimeType(MimeTypes.APPLICATION_M3U8)
+                                                    .build()
+                                            } else {
+                                                MediaItem.fromUri(streamUrl)
+                                            }
                                             setMediaItem(mediaItem)
                                             prepare()
                                             playWhenReady = true
@@ -201,7 +209,14 @@ class PlaybackManager(
                 if (currentRequestId != playRequestId) return@launch
 
                 if (!streamUrl.isNullOrBlank()) {
-                    val mediaItem = MediaItem.fromUri(streamUrl)
+                    val mediaItem = if (streamUrl.contains(".m3u8") || streamUrl.contains("soundcloud") || streamUrl.contains("mpegurl", ignoreCase = true)) {
+                        MediaItem.Builder()
+                            .setUri(streamUrl)
+                            .setMimeType(MimeTypes.APPLICATION_M3U8)
+                            .build()
+                    } else {
+                        MediaItem.fromUri(streamUrl)
+                    }
                     exoPlayer.setMediaItem(mediaItem)
                     exoPlayer.prepare()
                     exoPlayer.playWhenReady = true
