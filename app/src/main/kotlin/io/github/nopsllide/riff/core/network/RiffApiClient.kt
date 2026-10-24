@@ -140,11 +140,12 @@ class RiffApiClient(
         }
     }
 
-    suspend fun getLyrics(trackId: String, title: String, artist: String): Lyrics? = withContext(Dispatchers.IO) {
+    suspend fun getLyrics(trackId: String, title: String, artist: String, durationMs: Long = 0L): Lyrics? = withContext(Dispatchers.IO) {
         val encodedId = URLEncoder.encode(trackId, "UTF-8")
         val encodedTitle = URLEncoder.encode(title, "UTF-8")
         val encodedArtist = URLEncoder.encode(artist, "UTF-8")
-        val body = executeRequest("/lyrics?id=$encodedId&title=$encodedTitle&artist=$encodedArtist") ?: return@withContext null
+        val durationSec = durationMs / 1000
+        val body = executeRequest("/lyrics?id=$encodedId&title=$encodedTitle&artist=$encodedArtist&duration=$durationSec") ?: return@withContext null
         try {
             json.decodeFromString<Lyrics>(body)
         } catch (t: Throwable) {

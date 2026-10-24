@@ -410,7 +410,7 @@ class PlaybackManager(
             while (isActive) {
                 _currentPositionMs.value = exoPlayer.currentPosition
                 _durationMs.value = exoPlayer.duration.coerceAtLeast(0L)
-                delay(200)
+                delay(50)
             }
         }
     }

@@ -2,12 +2,21 @@ package io.github.nopsllide.riff.feature.player
 
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,10 +50,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -53,6 +68,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.palette.graphics.Palette
@@ -62,6 +78,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import io.github.nopsllide.riff.core.designsystem.component.FigmaPlayActionIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucidePauseIcon
+import io.github.nopsllide.riff.core.designsystem.component.LucideQueueIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideRepeatIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideShuffleIcon
 import io.github.nopsllide.riff.core.designsystem.component.LucideSkipBackIcon
@@ -92,6 +109,7 @@ fun FullPlayerScreen(
     onSeekTo: (Long) -> Unit,
     onToggleShuffle: () -> Unit = {},
     onToggleRepeat: () -> Unit = {},
+    onQueueClick: () -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -140,10 +158,11 @@ fun FullPlayerScreen(
     val syncedLines = lyrics?.syncedLines ?: emptyList()
     val activeIndex = remember(currentPositionMs, syncedLines) {
         if (syncedLines.isNotEmpty()) {
-            val idx = syncedLines.indexOfLast { it.timestampMs <= currentPositionMs }
-            if (idx >= 0) idx else 0
+            val adjustedPos = currentPositionMs + 120L
+            val idx = syncedLines.indexOfLast { it.timestampMs <= adjustedPos }
+            if (idx >= 0) idx else -1
         } else {
-            0
+            -1
         }
     }
 
@@ -290,6 +309,14 @@ fun FullPlayerScreen(
                     .padding(horizontal = (20 * scale).dp),
                 contentAlignment = Alignment.Center
             ) {
+                val artworkScale by animateFloatAsState(
+                    targetValue = if (isPlaying) 1f else 0.86f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "artworkScale"
+                )
                 val coverAlpha by animateFloatAsState(
                     targetValue = if (!showLyrics) 1f else 0f,
                     animationSpec = tween(durationMillis = 280),
@@ -307,11 +334,50 @@ fun FullPlayerScreen(
                         .aspectRatio(1f)
                         .align(Alignment.Center)
                         .graphicsLayer {
+                            scaleX = artworkScale
+                            scaleY = artworkScale
                             alpha = coverAlpha
                         }
+                        .shadow(
+                            elevation = (28 * scale * artworkScale).dp,
+                            shape = RoundedCornerShape((24 * scale).dp),
+                            ambientColor = activeAmbientColor.copy(alpha = 0.55f),
+                            spotColor = activeAmbientColor.copy(alpha = 0.65f)
+                        )
                         .clip(RoundedCornerShape((24 * scale).dp))
                         .background(Color(0xFF1E1E1E))
-                        .clickable(enabled = !showLyrics) { showLyrics = true },
+                        .pointerInput(showLyrics) {
+                            if (!showLyrics) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    var totalDragX = 0f
+                                    var isDrag = false
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                        if (change.isConsumed) break
+                                        val dragX = change.position.x - down.position.x
+                                        if (kotlin.math.abs(dragX) > 40f) {
+                                            isDrag = true
+                                            totalDragX = dragX
+                                        }
+                                        if (!change.pressed) {
+                                            change.consume()
+                                            if (isDrag) {
+                                                if (totalDragX < -60f) {
+                                                    onNextClick()
+                                                } else if (totalDragX > 60f) {
+                                                    onPrevClick()
+                                                }
+                                            } else {
+                                                showLyrics = true
+                                            }
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     if (!currentTrack?.thumbnail.isNullOrBlank()) {
@@ -332,6 +398,12 @@ fun FullPlayerScreen(
                             .graphicsLayer {
                                 alpha = lyricsAlpha
                             }
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                showLyrics = false
+                            }
                     ) {
                         if (syncedLines.isNotEmpty()) {
                             LazyColumn(
@@ -344,7 +416,7 @@ fun FullPlayerScreen(
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 itemsIndexed(syncedLines) { index, line ->
-                                    val isCurrent = index == activeIndex
+                                    val isCurrent = index == activeIndex && activeIndex >= 0
                                     val lineAlpha by animateFloatAsState(
                                         targetValue = if (isCurrent) 1f else 0.32f,
                                         animationSpec = spring(
@@ -470,7 +542,7 @@ fun FullPlayerScreen(
                     .padding(horizontal = (24 * scale).dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
                     BasicText(
                         text = currentTrack?.title ?: "Şarkı seçilmedi",
                         style = TextStyle(
@@ -480,7 +552,7 @@ fun FullPlayerScreen(
                             fontFamily = FontFamily.SansSerif
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.basicMarquee()
                     )
                     Spacer(modifier = Modifier.height((3 * scale).dp))
                     BasicText(
@@ -492,7 +564,23 @@ fun FullPlayerScreen(
                             fontFamily = FontFamily.SansSerif
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.basicMarquee()
+                    )
+                }
+
+                Spacer(modifier = Modifier.width((12 * scale).dp))
+
+                Box(
+                    modifier = Modifier
+                        .size((42 * scale).dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.08f))
+                        .clickable { onQueueClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    LucideQueueIcon(
+                        size = (20 * scale).dp,
+                        tint = Color.White
                     )
                 }
             }
@@ -590,7 +678,13 @@ fun FullPlayerScreen(
                         .clickable { onPlayPauseClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isPlaying) {
+                    if (isBuffering) {
+                        M3ExpressiveLoadingIndicator(
+                            modifier = Modifier.size((28 * scale).dp),
+                            color = Color.Black,
+                            strokeWidth = (2.8 * scale).dp
+                        )
+                    } else if (isPlaying) {
                         LucidePauseIcon(
                             size = (24 * scale).dp,
                             tint = Color.Black
@@ -639,4 +733,73 @@ private fun formatDuration(ms: Long): String {
     val min = totalSec / 60
     val sec = totalSec % 60
     return String.format("%d:%02d", min, sec)
+}
+
+@Composable
+fun M3ExpressiveLoadingIndicator(
+    modifier: Modifier = Modifier,
+    color: Color = Color.Black,
+    strokeWidth: Dp = 2.8.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "m3Loading")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "m3Rotation"
+    )
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "m3Phase"
+    )
+    val amplitudeScale by infiniteTransition.animateFloat(
+        initialValue = 0.75f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(750, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "m3Amp"
+    )
+
+    Canvas(modifier = modifier.graphicsLayer { rotationZ = rotation }) {
+        val strokePx = strokeWidth.toPx()
+        val maxAmp = 2.4.dp.toPx() * amplitudeScale
+        val baseRadius = (minOf(size.width, size.height) - strokePx) / 2f - maxAmp
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+
+        val path = Path()
+        val steps = 120
+        for (i in 0..steps) {
+            val theta = (i.toFloat() / steps) * (2f * Math.PI.toFloat())
+            val r = baseRadius + maxAmp * kotlin.math.cos(5f * theta + phase)
+            val x = cx + r * kotlin.math.cos(theta)
+            val y = cy + r * kotlin.math.sin(theta)
+            if (i == 0) {
+                path.moveTo(x, y)
+            } else {
+                path.lineTo(x, y)
+            }
+        }
+        path.close()
+
+        drawPath(
+            path = path,
+            color = color,
+            style = Stroke(
+                width = strokePx,
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round
+            )
+        )
+    }
 }

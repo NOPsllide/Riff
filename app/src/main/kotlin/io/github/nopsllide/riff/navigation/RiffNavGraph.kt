@@ -84,7 +84,7 @@ fun RiffNavGraph(
         val track = currentTrack
         if (track != null) {
             isLyricsLoading = true
-            currentLyrics = app.riffApiClient.getLyrics(track.id, track.title, track.artist)
+            currentLyrics = app.riffApiClient.getLyrics(track.id, track.title, track.artist, track.duration)
             isLyricsLoading = false
         } else {
             currentLyrics = null

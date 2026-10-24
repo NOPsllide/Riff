@@ -36,6 +36,7 @@ const val PATH_LUCIDE_SHUFFLE = "M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 
 const val PATH_LUCIDE_SKIP_BACK = "M19 20L9 12l10-8v16zM5 19V5"
 const val PATH_LUCIDE_REPEAT = "m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"
 const val PATH_LUCIDE_PAUSE = "M6 4h4v16H6zM14 4h4v16h-4z"
+const val PATH_LUCIDE_QUEUE = "M21 15V6M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM12 12H3M16 6H3M12 18H3"
 
 @Composable
 fun FigmaStrokedIcon(
@@ -218,4 +219,9 @@ fun LucideRepeatIcon(modifier: Modifier = Modifier, size: Dp = 28.dp, tint: Colo
 @Composable
 fun LucidePauseIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: Color = Color.Black) {
     FigmaFilledIcon(pathData = PATH_LUCIDE_PAUSE, modifier = modifier, size = size, tint = tint, viewportWidth = 24f, viewportHeight = 24f)
+}
+
+@Composable
+fun LucideQueueIcon(modifier: Modifier = Modifier, size: Dp = 24.dp, tint: Color = Color.White) {
+    FigmaStrokedIcon(pathData = PATH_LUCIDE_QUEUE, modifier = modifier, size = size, tint = tint, strokeWidth = 2f, viewportSize = 24f)
 }
