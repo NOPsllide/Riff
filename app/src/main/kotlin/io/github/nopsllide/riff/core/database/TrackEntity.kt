@@ -13,7 +13,7 @@ data class TrackEntity(
     val duration: Long = 0L,
     val thumbnail: String = "",
     val url: String = "",
-    val platform: String = "youtube",
+    val platform: String = "riff",
     val isFavorite: Boolean = false,
     val isHistory: Boolean = false,
     val playedAt: Long = 0L,

@@ -11,7 +11,7 @@ data class Track(
     val duration: Long = 0L,
     val thumbnail: String = "",
     val url: String = "",
-    val platform: String = "youtube",
+    val platform: String = "riff",
     val streamUrl: String? = null,
     val isFavorite: Boolean = false,
     val addedAt: Long = System.currentTimeMillis()

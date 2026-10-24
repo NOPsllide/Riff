@@ -86,7 +86,7 @@ fun DiscoverScreen(
     onOpenFullPlayer: () -> Unit = {},
     searchQuery: String = "",
     onQueryChange: (String) -> Unit = {},
-    selectedPlatform: String = "youtube",
+    selectedPlatform: String = "riff",
     onPlatformSelect: (String) -> Unit = {},
     searchResults: List<Track> = emptyList(),
     isSearchLoading: Boolean = false,

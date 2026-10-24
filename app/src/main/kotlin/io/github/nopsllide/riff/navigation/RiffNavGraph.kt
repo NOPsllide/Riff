@@ -59,7 +59,7 @@ fun RiffNavGraph(
     var isHotLoading by remember { mutableStateOf(true) }
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedPlatform by remember { mutableStateOf("youtube") }
+    var selectedPlatform by remember { mutableStateOf("riff") }
     var searchResults by remember { mutableStateOf<List<Track>>(emptyList()) }
     var isSearchLoading by remember { mutableStateOf(false) }
 

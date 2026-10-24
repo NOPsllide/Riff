@@ -127,7 +127,7 @@ class RiffApiClient(
         }
     }
 
-    suspend fun getStreamUrl(trackId: String, title: String = "", artist: String = "", platform: String = "youtube"): String? = withContext(Dispatchers.IO) {
+    suspend fun getStreamUrl(trackId: String, title: String = "", artist: String = "", platform: String = "riff"): String? = withContext(Dispatchers.IO) {
         val encodedId = URLEncoder.encode(trackId, "UTF-8")
         val encodedTitle = URLEncoder.encode(title, "UTF-8")
         val encodedArtist = URLEncoder.encode(artist, "UTF-8")
