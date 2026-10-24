@@ -6,6 +6,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -682,7 +683,7 @@ fun FullPlayerScreen(
                         M3ExpressiveLoadingIndicator(
                             modifier = Modifier.size((28 * scale).dp),
                             color = Color.Black,
-                            strokeWidth = (2.8 * scale).dp
+                            strokeWidth = (2.8f * scale).dp
                         )
                     } else if (isPlaying) {
                         LucidePauseIcon(
@@ -739,7 +740,7 @@ private fun formatDuration(ms: Long): String {
 fun M3ExpressiveLoadingIndicator(
     modifier: Modifier = Modifier,
     color: Color = Color.Black,
-    strokeWidth: Dp = 2.8.dp
+    strokeWidth: Dp = 2.8f.dp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "m3Loading")
     val rotation by infiniteTransition.animateFloat(
@@ -753,7 +754,7 @@ fun M3ExpressiveLoadingIndicator(
     )
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
+        targetValue = (2.0 * Math.PI).toFloat(),
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -772,7 +773,7 @@ fun M3ExpressiveLoadingIndicator(
 
     Canvas(modifier = modifier.graphicsLayer { rotationZ = rotation }) {
         val strokePx = strokeWidth.toPx()
-        val maxAmp = 2.4.dp.toPx() * amplitudeScale
+        val maxAmp = 2.4f.dp.toPx() * amplitudeScale
         val baseRadius = (minOf(size.width, size.height) - strokePx) / 2f - maxAmp
         val cx = size.width / 2f
         val cy = size.height / 2f
